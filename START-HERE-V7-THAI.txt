@@ -1,0 +1,11 @@
+TUM PA GUAY V7 POS — เริ่มใช้งาน
+
+1) อัปโหลดไฟล์ทั้งหมดขึ้น GitHub
+2) เข้า Supabase > SQL Editor > New query
+3) เปิด V7-POS-MIGRATION.sql แล้ว Copy ทั้งหมดไปวาง > Run
+4) ตรวจผลลัพธ์ restaurant_tables = 90
+5) เปิด https://USERNAME.github.io/REPOSITORY/pos.html
+6) Login ด้วย Email + Password ของ Supabase เดิม
+7) เลือกโต๊ะ > เลือกเมนู > บันทึกออเดอร์ > คิดเงิน > Print Receipt
+
+หมายเหตุ: ตั้งค่าเครื่องพิมพ์เป็นกระดาษ 80mm และปิด Header/Footer ในหน้าต่าง Print

@@ -1,0 +1,18 @@
+TUM PA GUAY RESTAURANT V6.2
+
+สิ่งที่เพิ่มจาก V6.1
+- เพิ่มส่วนแนะนำร้านและจุดเด่นของร้าน
+- เพิ่มปุ่มนำทาง Google Maps ใน Hero, Contact และแผนที่
+- ฝังแผนที่ Google Maps ในหน้า Contact
+- เพิ่ม Restaurant Schema / Canonical / Open Graph สำหรับ SEO
+- เปลี่ยน gallery-8.jpg เป็นรูปที่จอดรถมอเตอร์ไซค์
+- รักษาระบบหลังบ้าน Supabase, เมนู, รูปอาหาร และการจองไว้ทั้งหมด
+
+การอัปโหลด GitHub
+1. แตก ZIP
+2. อัปโหลดไฟล์ทั้งหมดในโฟลเดอร์ tum-pa-guay-restaurant-6.2-main ไปแทนไฟล์เดิม
+3. Commit changes
+4. รอ GitHub Pages 1-3 นาที
+5. รีเฟรชแบบล้างแคช: Command + Shift + R
+
+ตำแหน่งร้านแก้ได้ใน config.js ที่ mapsUrl และ addressLao
