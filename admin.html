@@ -2,12 +2,12 @@
 <html lang="lo">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Tum Pa Guay Admin V8</title>
+  <title>Tum Pa Guay Admin V8.2</title>
   <link rel="stylesheet" href="admin.css"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#062d20">
 </head>
 <body>
 <header class="admin-header">
-  <div class="admin-brand"><img src="logo.png" alt=""><div><strong>Tum Pa Guay Admin V8</strong><small>Online restaurant management</small></div></div>
+  <div class="admin-brand"><img src="logo.png" alt=""><div><strong>Tum Pa Guay Admin V8.2</strong><small>Online restaurant management</small></div></div>
   <div class="header-actions"><a href="pos.html">🧾 POS</a><a href="reports.html">📊 Reports</a><span id="adminUser"></span><button id="logoutButton" hidden>Logout</button><a href="index.html">← Website</a></div>
 </header>
 <main class="admin-shell">
@@ -21,7 +21,7 @@
 
   <section id="dashboard" hidden>
     <div class="dashboard-head">
-      <div><h1>Restaurant Dashboard V8.1</h1><p>จัดการเมนู รูปภาพ ราคา การจองโต๊ะ และเชื่อมต่อ POS</p></div>
+      <div><h1>Restaurant Dashboard V8.2</h1><p>จัดการเมนู รูปภาพ ราคา การจองโต๊ะ และเชื่อมต่อ POS</p></div>
       <div class="stats">
         <div><strong id="statMenu">0</strong><span>Menus</span></div>
         <div><strong id="statAvailable">0</strong><span>Available</span></div>
@@ -92,9 +92,24 @@
 
     <section class="tab-panel" id="panel-settings">
       <div class="settings-card">
+        <h2>การตั้งค่า VAT ของร้าน</h2>
+        <p>กำหนดวิธีคิด VAT สำหรับ POS, ใบเสร็จ และรายงาน โดยค่าจะบันทึกใน Supabase และใช้เหมือนกันทุกเครื่อง</p>
+        <div class="form-grid vat-settings-grid">
+          <label>รูปแบบ VAT
+            <select id="vatModeSetting">
+              <option value="inclusive">Inclusive — ราคารวม VAT แล้ว</option>
+              <option value="exclusive">Exclusive — บวก VAT เพิ่มท้ายบิล</option>
+            </select>
+          </label>
+          <label>อัตรา VAT (%)<input id="vatRateSetting" type="number" min="0" max="100" step="0.1" value="10"></label>
+        </div>
+        <button id="saveRestaurantSettings" class="primary" type="button">บันทึกการตั้งค่า VAT</button>
+        <p id="settingsStatus"></p>
+      </div>
+      <div class="settings-card">
         <h2>การเชื่อมต่อ Supabase</h2>
         <p id="connectionInfo"></p>
-        <p>Project URL ถูกใส่ไว้ใน <code>config.js</code> แล้ว เหลือใส่ Publishable Key เท่านั้น</p>
+        <p>Project URL และ Publishable Key อยู่ใน <code>config.js</code></p>
       </div>
     </section>
   </section>

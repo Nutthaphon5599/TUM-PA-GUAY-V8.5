@@ -1,0 +1,19 @@
+TUM PA GUAY POS V8.2
+
+สิ่งที่เพิ่ม
+1. แก้หน้าจอ Windows/Notebook: รายการอาหารไม่ถูกบิลบัง
+2. มีปุ่ม ดูบิล / ปิดบิล เมื่อหน้าจอแคบ
+3. รองรับ VAT Inclusive (รวม VAT ในราคา) และ VAT Exclusive
+4. ตั้งค่า VAT จาก Admin > ตั้งค่า และซิงก์ผ่าน Supabase ทุกเครื่อง
+
+ขั้นตอนอัปเกรด
+1. อัปโหลดไฟล์ V8.2 ทับ Repository เดิม แล้ว Commit/Push
+2. เปิด Supabase > SQL Editor
+3. เปิดไฟล์ V8.2-UPGRADE.sql คัดลอกทั้งหมด แล้วกด Run
+4. ต้องเห็นข้อความ V8.2 upgrade complete
+5. เปิด Admin > ตั้งค่า เลือก Inclusive และ VAT 10% แล้วกดบันทึก
+6. รีเฟรช POS แบบล้างแคช หรือรอ GitHub Pages อัปเดต
+
+หมายเหตุ VAT Inclusive
+ถ้าราคาเมนู 79,000 กีบ ลูกค้าจ่าย 79,000 กีบเท่าเดิม
+ระบบจะแยกภายในเป็น Subtotal 71,818.18 และ VAT 7,181.82

@@ -1,4 +1,4 @@
-# Tum Pa Guay Restaurant V8.1
+# Tum Pa Guay Restaurant V8.2
 
 V8 continues from V7.1 and keeps the website, menu, images, pricing, reservations, Admin, 90 huts/tables and POS.
 

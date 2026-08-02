@@ -12,7 +12,7 @@ else{$("#loginStatus").textContent="กรุณาใส่ Publishable Key ใ
 
 async function checkSession(){if(!client)return;const {data}=await client.auth.getSession();if(data.session)showDashboard(data.session.user)}
 $("#loginButton").onclick=async()=>{if(!client)return;$("#loginStatus").textContent="กำลังเข้าสู่ระบบ...";const {data,error}=await client.auth.signInWithPassword({email:$("#loginEmail").value.trim(),password:$("#loginPassword").value});if(error)$("#loginStatus").textContent=error.message;else showDashboard(data.user)}
-async function showDashboard(user){$("#loginPanel").hidden=true;$("#dashboard").hidden=false;$("#logoutButton").hidden=false;$("#adminUser").textContent=user.email||"Admin";await Promise.all([loadCategories(),loadMenus(),loadBookings()])}
+async function showDashboard(user){$("#loginPanel").hidden=true;$("#dashboard").hidden=false;$("#logoutButton").hidden=false;$("#adminUser").textContent=user.email||"Admin";await Promise.all([loadCategories(),loadMenus(),loadBookings(),loadRestaurantSettings()])}
 $("#logoutButton").onclick=async()=>{await client.auth.signOut();location.reload()}
 
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".tab-panel").forEach(p=>p.classList.toggle("active",p.id===`panel-${b.dataset.tab}`));if(b.dataset.tab==="calendar")renderCalendar()})
@@ -46,6 +46,26 @@ function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart
 function renderCalendar(){const year=calendarDate.getFullYear(),month=calendarDate.getMonth();$("#calendarTitle").textContent=new Intl.DateTimeFormat("th-TH",{month:"long",year:"numeric"}).format(calendarDate);const first=new Date(year,month,1),start=new Date(year,month,1-first.getDay());$("#calendarGrid").innerHTML="";for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const key=dateKey(d),dayBookings=bookings.filter(b=>b.booking_date===key);const cell=document.createElement("div");cell.className=`calendar-day ${d.getMonth()!==month?"muted":""} ${selectedDate===key?"selected":""}`;cell.innerHTML=`<strong>${d.getDate()}</strong>${dayBookings.length?`<span class="booking-dot">${dayBookings.length} การจอง</span>`:""}`;cell.onclick=()=>{selectedDate=key;renderCalendar();renderDayBookings(key)};$("#calendarGrid").appendChild(cell)}}
 function renderDayBookings(key){const list=bookings.filter(b=>b.booking_date===key);$("#dayBookings").innerHTML=`<h3>การจองวันที่ ${key}</h3>`+(list.length?list.map(b=>`<div class="day-booking"><strong>${b.booking_time} • ${b.customer_name}</strong><div>${b.guest_count} คน • ${b.phone} • ${b.status}</div><small>${b.note||""}</small></div>`).join(""):"<p>ยังไม่มีการจอง</p>")}
 $("#prevMonth").onclick=()=>{calendarDate.setMonth(calendarDate.getMonth()-1);renderCalendar()};$("#nextMonth").onclick=()=>{calendarDate.setMonth(calendarDate.getMonth()+1);renderCalendar()};
+
+async function loadRestaurantSettings(){
+  try{
+    const {data,error}=await client.from("restaurant_settings").select("vat_mode,vat_rate").eq("id",1).maybeSingle();
+    if(error)throw error;
+    const row=data||{vat_mode:"inclusive",vat_rate:10};
+    $("#vatModeSetting").value=row.vat_mode||"inclusive";
+    $("#vatRateSetting").value=Number(row.vat_rate??10);
+    $("#settingsStatus").textContent="โหลดการตั้งค่าแล้ว";
+  }catch(err){
+    $("#settingsStatus").textContent="กรุณารันไฟล์ V8.2-UPGRADE.sql ก่อน: "+err.message;
+  }
+}
+
+$("#saveRestaurantSettings").onclick=async()=>{
+  const payload={id:1,vat_mode:$("#vatModeSetting").value,vat_rate:Math.max(0,Number($("#vatRateSetting").value||0)),updated_at:new Date().toISOString()};
+  $("#settingsStatus").textContent="กำลังบันทึก...";
+  const {error}=await client.from("restaurant_settings").upsert(payload,{onConflict:"id"});
+  $("#settingsStatus").textContent=error?error.message:"บันทึกสำเร็จ — POS ทุกเครื่องจะใช้ค่าใหม่นี้";
+};
 
 function updateStats(){$("#statMenu").textContent=menuItems.length;$("#statAvailable").textContent=menuItems.filter(i=>i.available).length;$("#statFeatured").textContent=menuItems.filter(i=>i.featured).length;$("#statBookings").textContent=bookings.length}
 checkSession();

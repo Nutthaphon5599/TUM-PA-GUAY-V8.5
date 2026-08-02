@@ -2,6 +2,7 @@
 const cfg=window.TPG_CONFIG;
 const $=s=>document.querySelector(s);
 let client=null,user=null,categories=[],menus=[],tables=[],allTables=[],orders=[],history=[],cart=[],currentOrder=null,lastPaidOrder=null;
+let restaurantSettings={vat_mode:"inclusive",vat_rate:10};
 const money=n=>`${Math.round(Number(n||0)).toLocaleString()} ກີບ`;
 const configured=()=>cfg?.SUPABASE_URL?.startsWith('https://')&&!String(cfg?.SUPABASE_ANON_KEY||'').includes('PASTE_');
 function placeholder(label='Menu'){return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="500" height="360"><rect width="100%" height="100%" fill="#173e2a"/><text x="50%" y="49%" text-anchor="middle" fill="white" font-family="Arial" font-size="26">${String(label).replace(/[<>&"]/g,'')}</text></svg>`)}
@@ -15,11 +16,21 @@ $('#loginBtn').onclick=async()=>{if(!client)return;$('#loginStatus').textContent
 $('#logoutBtn').onclick=async()=>{await client.auth.signOut();location.reload()};
 async function enter(u){
   try{user=u;$('#loginPanel').hidden=true;$('#posApp').hidden=false;$('#logoutBtn').hidden=false;$('#posUser').textContent=u.email||'Staff';
-  await Promise.all([loadCategories(),loadMenus(),loadTables(),loadOpenOrders(),loadHistory()]);renderAll()}
+  await loadRestaurantSettings();await Promise.all([loadCategories(),loadMenus(),loadTables(),loadOpenOrders(),loadHistory()]);renderAll()}
   catch(e){showError(e)}
 }
 
 document.querySelectorAll('[data-view]').forEach(btn=>btn.onclick=async()=>{document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${btn.dataset.view}`));if(btn.dataset.view==='tables'){await loadOpenOrders();await loadTables()}if(btn.dataset.view==='history')await loadHistory()});
+
+async function loadRestaurantSettings(){
+  try{
+    const {data,error}=await client.from('restaurant_settings').select('vat_mode,vat_rate').eq('id',1).maybeSingle();
+    if(error)throw error;
+    if(data)restaurantSettings={vat_mode:data.vat_mode||'inclusive',vat_rate:Number(data.vat_rate??10)};
+  }catch(e){console.warn('V8.2 settings unavailable, using defaults',e)}
+  $('#vatRate').value=restaurantSettings.vat_rate;
+  $('#vatModeLabel').textContent=restaurantSettings.vat_mode==='inclusive'?'VAT ລວມໃນລາຄາແລ້ວ':'VAT ບວກເພີ່ມທ້າຍບິນ';
+}
 
 async function loadCategories(){const {data,error}=await client.from('categories').select('*').eq('active',true).order('sort_order');if(error)throw error;categories=data||[];$('#categoryFilter').innerHTML='<option value="all">ທຸກໝວດ</option>'+categories.map(c=>`<option value="${c.id}">${c.name_lo||c.name_th||c.name_en||'Category'}</option>`).join('')}
 async function loadMenus(){const {data,error}=await client.from('menu_items').select('*,categories(name_lo)').eq('available',true).order('sort_order');if(error)throw error;menus=data||[];renderMenus()}
@@ -37,15 +48,28 @@ function renderMenus(){$('#menuGrid').innerHTML='';filteredMenus().forEach(m=>{c
 $('#menuSearch').oninput=renderMenus;$('#categoryFilter').onchange=renderMenus;
 function addToCart(m){const found=cart.find(x=>x.menu_item_id===m.id&&!x.variant);if(found)found.quantity++;else cart.push({menu_item_id:m.id,item_name:m.name_lo||m.name_th||m.name_en,unit_price:Number(m.price),quantity:1,variant:null,note:''});renderCart()}
 function changeQty(i,d){if(!cart[i])return;cart[i].quantity+=d;if(cart[i].quantity<=0)cart.splice(i,1);renderCart()}
-function totals(){const subtotal=cart.reduce((s,x)=>s+x.unit_price*x.quantity,0),discount=Math.max(0,Number($('#discount').value||0)),vatRate=Math.max(0,Number($('#vatRate').value||0)),base=Math.max(0,subtotal-discount),vat=base*vatRate/100;return{subtotal,discount,vatRate,vat,grand:base+vat}}
-function renderCart(){$('#cartItems').innerHTML=cart.length?'':'<p class="empty">ແຕະເມນູທາງຊ້າຍ</p>';cart.forEach((x,i)=>{const row=document.createElement('div');row.className='cart-row';row.innerHTML=`<div><h4>${x.item_name}</h4><small>${money(x.unit_price)} × ${x.quantity} = ${money(x.unit_price*x.quantity)}</small><br><button class="remove">ລົບ</button></div><div class="qty"><button aria-label="ลด">−</button><b>${x.quantity}</b><button aria-label="เพิ่ม">+</button></div>`;const bs=row.querySelectorAll('.qty button');bs[0].onclick=()=>changeQty(i,-1);bs[1].onclick=()=>changeQty(i,1);row.querySelector('.remove').onclick=()=>{cart.splice(i,1);renderCart()};$('#cartItems').appendChild(row)});const t=totals();$('#subtotal').textContent=money(t.subtotal);$('#vatAmount').textContent=money(t.vat);$('#grandTotal').textContent=money(t.grand)}
+function totals(){
+  const itemTotal=cart.reduce((sum,x)=>sum+x.unit_price*x.quantity,0);
+  const discount=Math.max(0,Number($('#discount').value||0));
+  const vatRate=Math.max(0,Number(restaurantSettings.vat_rate||0));
+  const afterDiscount=Math.max(0,itemTotal-discount);
+  if(restaurantSettings.vat_mode==='inclusive'&&vatRate>0){
+    const subtotal=afterDiscount/(1+vatRate/100);
+    const vat=afterDiscount-subtotal;
+    return{itemTotal,subtotal,discount,vatRate,vat,grand:afterDiscount,vatMode:'inclusive'};
+  }
+  const subtotal=afterDiscount;
+  const vat=subtotal*vatRate/100;
+  return{itemTotal,subtotal,discount,vatRate,vat,grand:subtotal+vat,vatMode:'exclusive'};
+}
+function renderCart(){$('#cartItems').innerHTML=cart.length?'':'<p class="empty">ແຕະເມນູທາງຊ້າຍ</p>';cart.forEach((x,i)=>{const row=document.createElement('div');row.className='cart-row';row.innerHTML=`<div><h4>${x.item_name}</h4><small>${money(x.unit_price)} × ${x.quantity} = ${money(x.unit_price*x.quantity)}</small><br><button class="remove">ລົບ</button></div><div class="qty"><button aria-label="ลด">−</button><b>${x.quantity}</b><button aria-label="เพิ่ม">+</button></div>`;const bs=row.querySelectorAll('.qty button');bs[0].onclick=()=>changeQty(i,-1);bs[1].onclick=()=>changeQty(i,1);row.querySelector('.remove').onclick=()=>{cart.splice(i,1);renderCart()};$('#cartItems').appendChild(row)});const t=totals();$('#cartCountBadge').textContent=cart.reduce((n,x)=>n+x.quantity,0);$('#subtotal').textContent=money(t.subtotal);$('#vatAmount').textContent=money(t.vat);$('#grandTotal').textContent=money(t.grand)}
 $('#discount').oninput=renderCart;$('#vatRate').oninput=renderCart;$('#clearCartBtn').onclick=()=>{if(!cart.length||confirm('ລ້າງລາຍການທັງໝົດ?')){cart=[];renderCart()}};
 
 function generateOrderNo(){const d=new Date(),date=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`,time=`${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;return `TPG-${date}-${time}-${Math.floor(Math.random()*90+10)}`}
 async function createOrUpdateOrder(status='open'){
   if(!cart.length)throw new Error('ຍັງບໍ່ມີລາຍການອາຫານ');
   const t=totals(),opt=$('#tableSelect').selectedOptions[0],tableId=$('#tableSelect').value||null,tableNumber=tableId?Number(opt.dataset.number):null;
-  const payload={table_id:tableId,table_number:tableNumber,status,note:$('#orderNote').value.trim()||null,subtotal:t.subtotal,discount:t.discount,vat_rate:t.vatRate,vat_amount:t.vat,grand_total:t.grand};
+  const payload={table_id:tableId,table_number:tableNumber,status,note:$('#orderNote').value.trim()||null,subtotal:t.subtotal,discount:t.discount,vat_rate:t.vatRate,vat_amount:t.vat,vat_mode:t.vatMode,grand_total:t.grand};
   if(currentOrder?.id){const {error}=await client.from('orders').update(payload).eq('id',currentOrder.id);if(error)throw error;const {error:delError}=await client.from('order_items').delete().eq('order_id',currentOrder.id);if(delError)throw delError}
   else{payload.order_number=generateOrderNo();payload.opened_by=user.id;const {data,error}=await client.from('orders').insert(payload).select().single();if(error)throw error;currentOrder=data}
   const items=cart.map(x=>({...x,order_id:currentOrder.id}));const {error:itemError}=await client.from('order_items').insert(items);if(itemError)throw itemError;
@@ -53,7 +77,7 @@ async function createOrUpdateOrder(status='open'){
 }
 $('#saveOrderBtn').onclick=async()=>{try{await createOrUpdateOrder('open');alert('ບັນທຶກອໍເດີແລ້ວ')}catch(e){showError(e)}};
 $('#newOrderBtn').onclick=()=>resetOrder(true);
-function resetOrder(confirmFirst=false){if(confirmFirst&&cart.length&&!confirm('ເປີດບິນໃໝ່ ແລະ ລ້າງລາຍການປັດຈຸບັນ?'))return;cart=[];currentOrder=null;$('#orderNote').value='';$('#discount').value=0;$('#vatRate').value=0;updateOrderBadge();renderCart()}
+function resetOrder(confirmFirst=false){if(confirmFirst&&cart.length&&!confirm('ເປີດບິນໃໝ່ ແລະ ລ້າງລາຍການປັດຈຸບັນ?'))return;cart=[];currentOrder=null;$('#orderNote').value='';$('#discount').value=0;$('#vatRate').value=restaurantSettings.vat_rate;updateOrderBadge();renderCart()}
 function updateOrderBadge(){const label=currentOrder?.id?`${currentOrder.order_number} • ${currentOrder.table_number?'ຕູບ '+currentOrder.table_number:'Takeaway'}`:'ບິນໃໝ່ (ຍັງບໍ່ບັນທຶກ)';$('#orderBadge').textContent=label;$('#cartOrderNo').textContent=currentOrder?.order_number||'ບິນໃໝ່'}
 
 async function openExistingOrder(order){try{const {data,error}=await client.from('order_items').select('*').eq('order_id',order.id).order('created_at');if(error)throw error;currentOrder=order;cart=(data||[]).map(x=>({menu_item_id:x.menu_item_id,item_name:x.item_name,unit_price:Number(x.unit_price),quantity:x.quantity,variant:x.variant,note:x.note||''}));$('#tableSelect').value=order.table_id||'';$('#orderNote').value=order.note||'';$('#discount').value=Number(order.discount||0);$('#vatRate').value=Number(order.vat_rate||0);updateOrderBadge();renderCart();document.querySelector('[data-view="sale"]').click()}catch(e){showError(e)}}
@@ -109,3 +133,12 @@ function renderHistory(){$('#historyList').innerHTML=history.length?'':'<p class
 $('#refreshHistory').onclick=async()=>{try{await loadHistory()}catch(e){showError(e)}};
 function renderAll(){renderMenus();renderCart();renderTables();renderHistory();updateOrderBadge();updateTableManager()}
 initSession();
+
+
+// V8.2 responsive cart drawer
+const cartPanel=$('#cartPanel'),cartToggleBtn=$('#cartToggleBtn'),cartCloseBtn=$('#cartCloseBtn');
+function setCartOpen(open){document.body.classList.toggle('cart-open',open);cartToggleBtn.setAttribute('aria-expanded',String(open))}
+cartToggleBtn.onclick=()=>setCartOpen(!document.body.classList.contains('cart-open'));
+cartCloseBtn.onclick=()=>setCartOpen(false);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setCartOpen(false)});
+window.addEventListener('resize',()=>{if(window.innerWidth>1180)setCartOpen(false)});

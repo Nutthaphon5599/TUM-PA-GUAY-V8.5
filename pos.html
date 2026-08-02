@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Tum Pa Guay POS V8.1</title>
+  <title>Tum Pa Guay POS V8.2</title>
   <link rel="stylesheet" href="pos.css"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#062d20">
 </head>
 <body>
 <header class="pos-header">
-  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.1</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
+  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.2</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
   <nav><a href="admin.html">Dashboard</a><a href="reports.html">Reports</a><a href="index.html">Website</a><span id="posUser"></span><button id="logoutBtn" hidden>Logout</button></nav>
 </header>
 <main>
@@ -27,18 +27,21 @@
 
     <section id="view-sale" class="view active">
       <div class="help-strip">ແຕະຮູບອາຫານ 1 ຄັ້ງເພື່ອເພີ່ມລົງບິນ • ປັບຈຳນວນດ້ວຍ + / − ທາງຂວາ • ເລືອກວິທີຈ່າຍຕອນຄິດເງິນ</div>
-      <div class="sale-layout">
+      <button id="cartToggleBtn" class="cart-toggle" type="button" aria-expanded="false">🧾 ເບິ່ງບິນ <span id="cartCountBadge">0</span></button>
+      <div id="saleLayout" class="sale-layout">
         <section class="catalog-panel">
           <div class="filters"><input id="menuSearch" placeholder="ຄົ້ນຫາເມນູ..."><select id="categoryFilter"><option value="all">ທຸກໝວດ</option></select></div>
           <div id="menuGrid" class="menu-grid"></div>
         </section>
-        <aside class="cart-panel">
+        <aside id="cartPanel" class="cart-panel">
+          <button id="cartCloseBtn" class="cart-close" type="button" aria-label="Close bill">×</button>
           <div class="cart-title"><div><h2>ລາຍການສັ່ງ</h2><small id="cartOrderNo">ບິນໃໝ່</small></div><button id="clearCartBtn" class="danger ghost">ລ້າງ</button></div>
           <div id="cartItems" class="cart-items"><p class="empty">ແຕະເມນູທາງຊ້າຍ</p></div>
           <label class="order-note">ໝາຍເຫດບິນ<textarea id="orderNote" rows="2" placeholder="ເຊັ່ນ: ບໍ່ເຜັດ"></textarea></label>
           <div class="totals">
             <label>ສ່ວນຫຼຸດ <input id="discount" type="number" min="0" value="0"></label>
-            <label>VAT % <input id="vatRate" type="number" min="0" step="0.1" value="0"></label>
+            <label>VAT % <input id="vatRate" type="number" min="0" step="0.1" value="10" readonly></label>
+            <small id="vatModeLabel" class="vat-mode-label">VAT ລວມໃນລາຄາແລ້ວ</small>
             <p><span>Subtotal</span><strong id="subtotal">0 ກີບ</strong></p><p><span>VAT</span><strong id="vatAmount">0 ກີບ</strong></p>
             <p class="grand"><span>Grand Total</span><strong id="grandTotal">0 ກີບ</strong></p>
           </div>
