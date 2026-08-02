@@ -29,7 +29,7 @@
   </script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="style.css">
-</head>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#062d20"></head>
 <body>
   <div class="site-loader" id="siteLoader">
     <img src="logo.png" alt="Tum Pa Guay">
@@ -174,5 +174,5 @@
   <script src="config.js"></script>
   <script src="seed-data.js"></script>
   <script src="app.js"></script>
-</body>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(console.error))}</script></body>
 </html>

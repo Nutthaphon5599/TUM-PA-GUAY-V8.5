@@ -2,13 +2,13 @@
 <html lang="lo">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Tum Pa Guay Admin V7</title>
-  <link rel="stylesheet" href="admin.css">
+  <title>Tum Pa Guay Admin V8</title>
+  <link rel="stylesheet" href="admin.css"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#062d20">
 </head>
 <body>
 <header class="admin-header">
-  <div class="admin-brand"><img src="logo.png" alt=""><div><strong>Tum Pa Guay Admin V7</strong><small>Online restaurant management</small></div></div>
-  <div class="header-actions"><a href="pos.html">🧾 POS</a><span id="adminUser"></span><button id="logoutButton" hidden>Logout</button><a href="index.html">← Website</a></div>
+  <div class="admin-brand"><img src="logo.png" alt=""><div><strong>Tum Pa Guay Admin V8</strong><small>Online restaurant management</small></div></div>
+  <div class="header-actions"><a href="pos.html">🧾 POS</a><a href="reports.html">📊 Reports</a><span id="adminUser"></span><button id="logoutButton" hidden>Logout</button><a href="index.html">← Website</a></div>
 </header>
 <main class="admin-shell">
   <section class="login-card" id="loginPanel">
@@ -21,7 +21,7 @@
 
   <section id="dashboard" hidden>
     <div class="dashboard-head">
-      <div><h1>Restaurant Dashboard V7.1</h1><p>จัดการเมนู รูปภาพ ราคา การจองโต๊ะ และเชื่อมต่อ POS</p></div>
+      <div><h1>Restaurant Dashboard V8.0</h1><p>จัดการเมนู รูปภาพ ราคา การจองโต๊ะ และเชื่อมต่อ POS</p></div>
       <div class="stats">
         <div><strong id="statMenu">0</strong><span>Menus</span></div>
         <div><strong id="statAvailable">0</strong><span>Available</span></div>
@@ -102,5 +102,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="admin.js"></script>
-</body>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(console.error))}</script></body>
 </html>

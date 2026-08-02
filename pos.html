@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Tum Pa Guay POS V7.1</title>
-  <link rel="stylesheet" href="pos.css">
+  <title>Tum Pa Guay POS V8.0</title>
+  <link rel="stylesheet" href="pos.css"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#062d20">
 </head>
 <body>
 <header class="pos-header">
-  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V7.1</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
-  <nav><a href="admin.html">Dashboard</a><a href="index.html">Website</a><span id="posUser"></span><button id="logoutBtn" hidden>Logout</button></nav>
+  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.0</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
+  <nav><a href="admin.html">Dashboard</a><a href="reports.html">Reports</a><a href="index.html">Website</a><span id="posUser"></span><button id="logoutBtn" hidden>Logout</button></nav>
 </header>
 <main>
   <section id="loginPanel" class="login-card">
@@ -21,7 +21,7 @@
 
   <section id="posApp" hidden>
     <div class="topbar">
-      <div class="mode-tabs"><button class="active" data-view="sale">🧾 POS</button><button data-view="tables">🏕️ ຕູບ</button><button data-view="history">📚 ປະຫວັດບິນ</button></div>
+      <div class="mode-tabs"><button class="active" data-view="sale">🧾 POS</button><button data-view="tables">🏕️ ຕູບ</button><button data-view="history">📚 ປະຫວັດບິນ</button><a class="report-tab" href="reports.html">📊 ລາຍງານ</a></div>
       <div class="current-order"><label>ຕູບ <select id="tableSelect"></select></label><button id="newOrderBtn">+ ບິນໃໝ່</button><span id="orderBadge">ບິນໃໝ່ (ຍັງບໍ່ບັນທຶກ)</span></div>
     </div>
 
@@ -80,4 +80,4 @@
   </div>
 </section>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="pos.js"></script>
-</body></html>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(console.error))}</script></body></html>
