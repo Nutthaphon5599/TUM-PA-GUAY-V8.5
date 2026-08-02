@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Tum Pa Guay POS V8.0</title>
+  <title>Tum Pa Guay POS V8.1</title>
   <link rel="stylesheet" href="pos.css"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#062d20">
 </head>
 <body>
 <header class="pos-header">
-  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.0</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
+  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.1</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
   <nav><a href="admin.html">Dashboard</a><a href="reports.html">Reports</a><a href="index.html">Website</a><span id="posUser"></span><button id="logoutBtn" hidden>Logout</button></nav>
 </header>
 <main>
@@ -21,7 +21,7 @@
 
   <section id="posApp" hidden>
     <div class="topbar">
-      <div class="mode-tabs"><button class="active" data-view="sale">🧾 POS</button><button data-view="tables">🏕️ ຕູບ</button><button data-view="history">📚 ປະຫວັດບິນ</button><a class="report-tab" href="reports.html">📊 ລາຍງານ</a></div>
+      <div class="mode-tabs"><button class="active" data-view="sale">🧾 POS</button><button data-view="tables">🏕️ ຕູບ</button><button data-view="history">📚 ປະຫວັດບິນ</button><a class="report-tab" href="reports.html">📊 ລາຍງານ</a><button id="printerSettingsBtn" class="report-tab" type="button">🖨️ ຕັ້ງຄ່າປຣິນເຕີ</button></div>
       <div class="current-order"><label>ຕູບ <select id="tableSelect"></select></label><button id="newOrderBtn">+ ບິນໃໝ່</button><span id="orderBadge">ບິນໃໝ່ (ຍັງບໍ່ບັນທຶກ)</span></div>
     </div>
 
@@ -71,13 +71,29 @@
   </div>
 </div>
 
+
+<div id="printerModal" class="modal" hidden aria-hidden="true">
+  <div class="modal-card printer-card" role="dialog" aria-modal="true">
+    <button id="printerCloseBtn" class="modal-close" type="button">×</button>
+    <h2>ຕັ້ງຄ່າປຣິນເຕີ SL-253</h2>
+    <p class="printer-status" id="printerStatus">QZ Tray: ຍັງບໍ່ໄດ້ເຊື່ອມຕໍ່</p>
+    <div class="printer-actions"><button id="connectQzBtn" class="primary" type="button">1. ເຊື່ອມ QZ Tray</button><button id="findPrintersBtn" type="button">2. ຄົ້ນຫາປຣິນເຕີ</button></div>
+    <label>ຊື່ປຣິນເຕີ<select id="printerName"><option value="">-- ເລືອກປຣິນເຕີ --</option></select></label>
+    <label class="check-row"><input id="autoCut" type="checkbox" checked> ຕັດເຈ້ຍອັດຕະໂນມັດ</label>
+    <label class="check-row"><input id="openDrawer" type="checkbox"> ເປີດລິ້ນຊັກເງິນຫຼັງພິມ</label>
+    <label class="check-row"><input id="autoPrintAfterPay" type="checkbox"> ພິມອັດຕະໂນມັດຫຼັງຊຳລະ</label>
+    <button id="savePrinterBtn" class="primary wide" type="button">ບັນທຶກການຕັ້ງຄ່າ</button>
+    <small class="printer-help">ຕ້ອງຕິດຕັ້ງ QZ Tray ໃນ Mac/Windows ແລະເປີດໂປຣແກຣມໄວ້. ຖ້າບໍ່ໃຊ້ QZ Tray ໃຫ້ກົດ Browser Print.</small>
+  </div>
+</div>
+
 <section id="receipt" class="receipt" hidden>
-  <div class="receipt-actions no-print"><button id="printBtn" class="primary">🖨️ Print Receipt</button><button id="closeReceiptBtn">Close</button></div>
+  <div class="receipt-actions no-print"><button id="directPrintBtn" class="primary">⚡ ພິມກົງ SL-253</button><button id="printBtn">🖨️ Browser Print</button><button id="closeReceiptBtn">Close</button></div>
   <div class="receipt-paper"><img src="logo.png" alt="PaGuay" class="receipt-logo"><h1>ຮ້ານຕຳຕູບປ່າກ້ວຍ</h1><p>TUM PA GUAY RESTAURANT</p><h2>RECEIPT / ໃບບິນຮັບເງິນ</h2>
     <div class="receipt-meta"><span>Bill: <b id="rOrderNo"></b></span><span>Date: <b id="rDate"></b></span><span>ຕູບ: <b id="rTable"></b></span></div>
     <table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody id="rItems"></tbody></table>
     <div class="receipt-totals"><p><span>Subtotal</span><b id="rSubtotal"></b></p><p><span>Discount</span><b id="rDiscount"></b></p><p><span>VAT</span><b id="rVat"></b></p><p class="grand"><span>Grand Total</span><b id="rTotal"></b></p></div><p class="thanks">ຂອບໃຈທີ່ມາອຸດໜູນ • Thank you</p>
   </div>
 </section>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="pos.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.5/qz-tray.js"></script><script src="config.js"></script><script src="pos.js"></script>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(console.error))}</script></body></html>

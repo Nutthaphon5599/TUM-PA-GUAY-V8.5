@@ -1,0 +1,1 @@
+V8.1 does not require a database migration. Keep the existing V8 Supabase database.
