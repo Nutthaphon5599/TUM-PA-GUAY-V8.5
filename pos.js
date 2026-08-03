@@ -3,6 +3,10 @@ const cfg=window.TPG_CONFIG;
 const $=s=>document.querySelector(s);
 let client=null,user=null,categories=[],menus=[],tables=[],allTables=[],orders=[],history=[],cart=[],currentOrder=null,lastPaidOrder=null;
 let restaurantSettings={vat_mode:"inclusive",vat_rate:10};
+const MENU_CACHE_KEY='tpg-v83-final-menu-cache';
+const CACHE_MAX_AGE=6*60*60*1000;
+function readMenuCache(){try{const c=JSON.parse(localStorage.getItem(MENU_CACHE_KEY)||'null');return c&&Date.now()-c.savedAt<CACHE_MAX_AGE?c:null}catch(_){return null}}
+function writeMenuCache(){try{localStorage.setItem(MENU_CACHE_KEY,JSON.stringify({savedAt:Date.now(),categories,menus}))}catch(_){}}
 const money=n=>`${Math.round(Number(n||0)).toLocaleString()} ກີບ`;
 const configured=()=>cfg?.SUPABASE_URL?.startsWith('https://')&&!String(cfg?.SUPABASE_ANON_KEY||'').includes('PASTE_');
 function placeholder(label='Menu'){return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="500" height="360"><rect width="100%" height="100%" fill="#173e2a"/><text x="50%" y="49%" text-anchor="middle" fill="white" font-family="Arial" font-size="26">${String(label).replace(/[<>&"]/g,'')}</text></svg>`)}
@@ -16,7 +20,7 @@ async function initSession(){if(!client)return;try{const session=await window.TP
 $('#loginBtn').onclick=async()=>{if(!client)return;$('#loginStatus').textContent='ກຳລັງເຂົ້າລະບົບ...';const {data,error}=await client.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});if(error)$('#loginStatus').textContent=error.message;else await enter(data.user)};
 $('#logoutBtn').onclick=async()=>{await client.auth.signOut();location.reload()};
 async function enter(u){
-  try{user=u;$('#loginPanel').hidden=true;$('#posApp').hidden=false;$('#logoutBtn').hidden=false;$('#posUser').textContent=u.email||'Staff';
+  try{user=u;const cached=readMenuCache();if(cached){categories=cached.categories||[];menus=cached.menus||[];renderMenus();}$('#loginPanel').hidden=true;$('#posApp').hidden=false;$('#logoutBtn').hidden=false;$('#posUser').textContent=u.email||'Staff';
   await loadRestaurantSettings();await Promise.all([loadCategories(),loadMenus(),loadTables(),loadOpenOrders(),loadHistory()]);renderAll()}
   catch(e){showError(e)}
 }
@@ -33,8 +37,8 @@ async function loadRestaurantSettings(){
   $('#vatModeLabel').textContent=restaurantSettings.vat_mode==='inclusive'?'VAT ລວມໃນລາຄາແລ້ວ':'VAT ບວກເພີ່ມທ້າຍບິນ';
 }
 
-async function loadCategories(){const {data,error}=await client.from('categories').select('*').eq('active',true).order('sort_order');if(error)throw error;categories=data||[];$('#categoryFilter').innerHTML='<option value="all">ທຸກໝວດ</option>'+categories.map(c=>`<option value="${c.id}">${c.name_lo||c.name_th||c.name_en||'Category'}</option>`).join('')}
-async function loadMenus(){const {data,error}=await client.from('menu_items').select('*,categories(name_lo)').eq('available',true).order('sort_order');if(error)throw error;menus=data||[];renderMenus()}
+async function loadCategories(){const {data,error}=await client.from('categories').select('*').eq('active',true).order('sort_order');if(error)throw error;categories=data||[];writeMenuCache();$('#categoryFilter').innerHTML='<option value="all">ທຸກໝວດ</option>'+categories.map(c=>`<option value="${c.id}">${c.name_lo||c.name_th||c.name_en||'Category'}</option>`).join('')}
+async function loadMenus(){const {data,error}=await client.from('menu_items').select('id,category_id,name_lo,name_th,name_en,price,image_url,sort_order,categories(name_lo)').eq('available',true).order('sort_order');if(error)throw error;menus=data||[];writeMenuCache();renderMenus()}
 async function loadTables(){
   const {data,error}=await client.from('restaurant_tables').select('*').order('table_number');
   if(error){throw new Error('กรุณารัน V7-POS-MIGRATION.sql ก่อน: '+error.message)}
@@ -45,7 +49,7 @@ async function loadOpenOrders(){const {data,error}=await client.from('orders').s
 async function loadHistory(){const {data,error}=await client.from('orders').select('*').eq('status','paid').order('closed_at',{ascending:false}).limit(100);if(error)throw error;history=data||[];renderHistory()}
 
 function filteredMenus(){const q=$('#menuSearch').value.trim().toLowerCase(),cat=$('#categoryFilter').value;return menus.filter(m=>(cat==='all'||m.category_id===cat)&&`${m.name_lo||''} ${m.name_th||''} ${m.name_en||''}`.toLowerCase().includes(q))}
-function renderMenus(){$('#menuGrid').innerHTML='';filteredMenus().forEach(m=>{const el=document.createElement('article');el.className='menu-card';el.innerHTML=`<img alt=""><div><h3>${m.name_lo||m.name_th||m.name_en}</h3><strong>${money(m.price)}</strong></div>`;const img=el.querySelector('img');img.onerror=()=>{img.onerror=null;img.src=placeholder(m.name_lo)};img.src=m.image_url||placeholder(m.name_lo);el.onclick=()=>addToCart(m);$('#menuGrid').appendChild(el)})}
+function renderMenus(){$('#menuGrid').innerHTML='';filteredMenus().forEach(m=>{const el=document.createElement('article');el.className='menu-card';el.innerHTML=`<img alt="" loading="lazy" decoding="async" fetchpriority="low"><div><h3>${m.name_lo||m.name_th||m.name_en}</h3><strong>${money(m.price)}</strong></div>`;const img=el.querySelector('img');img.onerror=()=>{img.onerror=null;img.src=placeholder(m.name_lo)};img.src=m.image_url||placeholder(m.name_lo);el.onclick=()=>addToCart(m);$('#menuGrid').appendChild(el)})}
 $('#menuSearch').oninput=renderMenus;$('#categoryFilter').onchange=renderMenus;
 function addToCart(m){const found=cart.find(x=>x.menu_item_id===m.id&&!x.variant);if(found)found.quantity++;else cart.push({menu_item_id:m.id,item_name:m.name_lo||m.name_th||m.name_en,unit_price:Number(m.price),quantity:1,variant:null,note:''});renderCart()}
 function changeQty(i,d){if(!cart[i])return;cart[i].quantity+=d;if(cart[i].quantity<=0)cart.splice(i,1);renderCart()}

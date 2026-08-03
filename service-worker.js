@@ -1,1 +1,59 @@
-const CACHE='tpg-v82-static-1';const ASSETS=['./','./index.html','./admin.html','./pos.html','./reports.html','./style.css','./admin.css','./pos.css','./reports.css','./app.js','./admin.js','./pos.js','./reports.js','./config.js','./logo.png','./manifest.webmanifest'];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==location.origin)return;e.respondWith(fetch(e.request).then(r=>{const c=r.clone();caches.open(CACHE).then(x=>x.put(e.request,c));return r}).catch(()=>caches.match(e.request)))})
+const VERSION = "v83-final-1";
+const STATIC_CACHE = `tpg-static-${VERSION}`;
+const IMAGE_CACHE = `tpg-images-${VERSION}`;
+const CORE = [
+  "./", "./index.html", "./admin.html", "./pos.html", "./reports.html",
+  "./style.css", "./admin.css", "./pos.css", "./reports.css",
+  "./app.js", "./admin.js", "./pos.js", "./reports.js", "./stability.js",
+  "./config.js", "./logo.png", "./manifest.webmanifest"
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(CORE)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.filter((key) => ![STATIC_CACHE, IMAGE_CACHE].includes(key)).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
+});
+
+async function networkFirst(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  try {
+    const response = await fetch(request, { cache: "no-store" });
+    if (response.ok) cache.put(request, response.clone());
+    return response;
+  } catch (_) {
+    return (await cache.match(request)) || Response.error();
+  }
+}
+
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(IMAGE_CACHE);
+  const cached = await cache.match(request);
+  const update = fetch(request).then((response) => {
+    if (response.ok) cache.put(request, response.clone());
+    return response;
+  }).catch(() => null);
+  return cached || update || Response.error();
+}
+
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (event.request.destination === "image") {
+    event.respondWith(staleWhileRevalidate(event.request));
+    return;
+  }
+
+  if (["document", "script", "style"].includes(event.request.destination)) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
+});

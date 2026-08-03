@@ -301,7 +301,7 @@ function renderMenu() {
     card.innerHTML = `
       <button type="button" class="menu-photo" aria-label="${safeText(item.name)}">
         <span class="badge">${safeText(item.category)}</span>
-        <img alt="${safeText(item.name)}" loading="lazy">
+        <img alt="${safeText(item.name)}" loading="lazy" decoding="async" fetchpriority="low">
       </button>
       <div class="menu-content">
         <h3>${safeText(item.name)}</h3>
