@@ -1,19 +1,12 @@
-# Tum Pa Guay Restaurant V8.2
+# Tum Pa Guay POS V8.3 Stable Production
 
-V8 continues from V7.1 and keeps the website, menu, images, pricing, reservations, Admin, 90 huts/tables and POS.
+Production stability update based on V8.2.
 
-## New in V8
-- Sales dashboard and date-range reports
-- Search by bill number and hut/table
-- Daily/monthly totals, VAT, discounts and payment methods
-- Best-selling menu report
-- CSV export and JSON backup download
-- Database indexes for long-term history
-- PWA installation support
+- Automatic Supabase token refresh
+- Session recovery after sleep/background
+- Online/offline recovery
+- Duplicate-save protection
+- Updated PWA cache
+- Existing POS, VAT, reports, admin and printing features preserved
 
-## Upgrade
-1. Upload all V8 files to GitHub Pages.
-2. Run `V8-UPGRADE.sql` once in Supabase SQL Editor.
-3. Open `reports.html`.
-
-Never publish a Supabase secret/service-role key.
+No additional SQL migration is required when upgrading from V8.2.

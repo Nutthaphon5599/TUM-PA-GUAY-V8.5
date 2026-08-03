@@ -7,10 +7,10 @@ let calendarDate=new Date(), selectedDate=null;
 function configured(){return cfg.SUPABASE_URL.startsWith("https://")&&!cfg.SUPABASE_ANON_KEY.includes("PASTE_")}
 function placeholder(label="Menu"){return "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="100%" height="100%" fill="#173e2a"/><text x="50%" y="49%" text-anchor="middle" fill="white" font-family="Arial" font-size="34" font-weight="700">${String(label).replace(/[<>&"]/g,"")}</text><text x="50%" y="57%" text-anchor="middle" fill="#d8ad56" font-family="Arial" font-size="18">Image coming soon</text></svg>`)}
 
-if(configured()){client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);$("#connectionInfo").textContent="เชื่อมต่อ Supabase configuration แล้ว"}
+if(configured()){client=window.TPG_AUTH.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);$("#connectionInfo").textContent="เชื่อมต่อ Supabase configuration แล้ว"}
 else{$("#loginStatus").textContent="กรุณาใส่ Publishable Key ใน config.js";$("#connectionInfo").textContent="ยังไม่ได้ใส่ Publishable Key"}
 
-async function checkSession(){if(!client)return;const {data}=await client.auth.getSession();if(data.session)showDashboard(data.session.user)}
+async function checkSession(){if(!client)return;try{const session=await window.TPG_AUTH.refresh(true);if(session)showDashboard(session.user)}catch(e){console.warn(e)}}
 $("#loginButton").onclick=async()=>{if(!client)return;$("#loginStatus").textContent="กำลังเข้าสู่ระบบ...";const {data,error}=await client.auth.signInWithPassword({email:$("#loginEmail").value.trim(),password:$("#loginPassword").value});if(error)$("#loginStatus").textContent=error.message;else showDashboard(data.user)}
 async function showDashboard(user){$("#loginPanel").hidden=true;$("#dashboard").hidden=false;$("#logoutButton").hidden=false;$("#adminUser").textContent=user.email||"Admin";await Promise.all([loadCategories(),loadMenus(),loadBookings(),loadRestaurantSettings()])}
 $("#logoutButton").onclick=async()=>{await client.auth.signOut();location.reload()}
