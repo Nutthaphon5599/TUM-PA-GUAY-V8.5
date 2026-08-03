@@ -197,7 +197,7 @@ async function loadMenu() {
       categoryRows = [];
       showBanner(t("demo"));
     } else {
-      client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+      client = window.TPG_STABILITY.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
       await loadDatabaseData();
       hideBanner();
     }

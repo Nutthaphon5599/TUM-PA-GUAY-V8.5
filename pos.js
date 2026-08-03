@@ -6,18 +6,17 @@ let restaurantSettings={vat_mode:"inclusive",vat_rate:10};
 const money=n=>`${Math.round(Number(n||0)).toLocaleString()} ກີບ`;
 const configured=()=>cfg?.SUPABASE_URL?.startsWith('https://')&&!String(cfg?.SUPABASE_ANON_KEY||'').includes('PASTE_');
 function placeholder(label='Menu'){return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="500" height="360"><rect width="100%" height="100%" fill="#173e2a"/><text x="50%" y="49%" text-anchor="middle" fill="white" font-family="Arial" font-size="26">${String(label).replace(/[<>&"]/g,'')}</text></svg>`)}
-async function showError(err){console.error(err);if(window.TPG_AUTH?.isJwtError(err)){try{await window.TPG_AUTH.refresh(true);setConnectionStatus('ຕໍ່ອາຍຸລະບົບແລ້ວ','ok');return}catch(e){console.error(e)} } const msg=err?.message==='SESSION_REQUIRED'?'Session ໝົດອາຍຸ กรุณา Login ใหม่':(err?.message||String(err||'ເກີດຂໍ້ຜິດພາດ'));setConnectionStatus(msg,'error');if(msg.includes('Session')){await client?.auth.signOut();location.reload()}else alert(msg)}
-function setConnectionStatus(text,type='ok'){let el=document.getElementById('connectionStatus');if(!el){el=document.createElement('div');el.id='connectionStatus';el.className='connection-status';document.body.appendChild(el)}el.textContent=text;el.dataset.type=type;el.hidden=false;clearTimeout(setConnectionStatus.t);setConnectionStatus.t=setTimeout(()=>el.hidden=true,3500)}
-window.addEventListener('tpg:offline',()=>setConnectionStatus('ออฟไลน์ — กำลังรออินเทอร์เน็ต','error'));window.addEventListener('tpg:online',()=>setConnectionStatus('เชื่อมต่ออินเทอร์เน็ตแล้ว','ok'));window.addEventListener('tpg:signedout',()=>location.reload());
+function showError(err){console.error(err);alert(window.TPG_STABILITY?.friendly(err)||err?.message||String(err||'ເກີດຂໍ້ຜິດພາດ'))}
+function lockButton(btn,locked,label='ກຳລັງດຳເນີນການ...'){if(!btn)return; if(locked){btn.dataset.oldText=btn.textContent;btn.disabled=true;btn.textContent=label}else{btn.disabled=false;btn.textContent=btn.dataset.oldText||btn.textContent}}
 
-if(configured()) client=window.TPG_AUTH.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+if(configured()) client=window.TPG_STABILITY.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
 else $('#loginStatus').textContent='กรุณาตรวจ config.js';
 
-async function initSession(){if(!client)return;try{const session=await window.TPG_AUTH.refresh(true);if(session)await enter(session.user)}catch(e){console.warn(e);$('#loginStatus').textContent='กรุณา Login ใหม่'}}
+async function initSession(){if(!client)return;try{const session=await window.TPG_STABILITY.ensureSession();if(session)await enter(session.user)}catch(e){console.warn(e)}}
 $('#loginBtn').onclick=async()=>{if(!client)return;$('#loginStatus').textContent='ກຳລັງເຂົ້າລະບົບ...';const {data,error}=await client.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});if(error)$('#loginStatus').textContent=error.message;else await enter(data.user)};
 $('#logoutBtn').onclick=async()=>{await client.auth.signOut();location.reload()};
 async function enter(u){
-  try{await window.TPG_AUTH.ensureSession();user=u;$('#loginPanel').hidden=true;$('#posApp').hidden=false;$('#logoutBtn').hidden=false;$('#posUser').textContent=u.email||'Staff';
+  try{user=u;$('#loginPanel').hidden=true;$('#posApp').hidden=false;$('#logoutBtn').hidden=false;$('#posUser').textContent=u.email||'Staff';
   await loadRestaurantSettings();await Promise.all([loadCategories(),loadMenus(),loadTables(),loadOpenOrders(),loadHistory()]);renderAll()}
   catch(e){showError(e)}
 }
@@ -69,7 +68,6 @@ $('#discount').oninput=renderCart;$('#vatRate').oninput=renderCart;$('#clearCart
 
 function generateOrderNo(){const d=new Date(),date=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`,time=`${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;return `TPG-${date}-${time}-${Math.floor(Math.random()*90+10)}`}
 async function createOrUpdateOrder(status='open'){
-  await window.TPG_AUTH.ensureSession();
   if(!cart.length)throw new Error('ຍັງບໍ່ມີລາຍການອາຫານ');
   const t=totals(),opt=$('#tableSelect').selectedOptions[0],tableId=$('#tableSelect').value||null,tableNumber=tableId?Number(opt.dataset.number):null;
   const payload={table_id:tableId,table_number:tableNumber,status,note:$('#orderNote').value.trim()||null,subtotal:t.subtotal,discount:t.discount,vat_rate:t.vatRate,vat_amount:t.vat,vat_mode:t.vatMode,grand_total:t.grand};
@@ -78,7 +76,7 @@ async function createOrUpdateOrder(status='open'){
   const items=cart.map(x=>({...x,order_id:currentOrder.id}));const {error:itemError}=await client.from('order_items').insert(items);if(itemError)throw itemError;
   currentOrder={...currentOrder,...payload};updateOrderBadge();await loadOpenOrders();return currentOrder;
 }
-$('#saveOrderBtn').onclick=async()=>{const b=$('#saveOrderBtn');if(b.disabled)return;b.disabled=true;try{await createOrUpdateOrder('open');setConnectionStatus('ບັນທຶກອໍເດີແລ້ວ','ok')}catch(e){await showError(e)}finally{b.disabled=false}};
+$('#saveOrderBtn').onclick=async()=>{const b=$('#saveOrderBtn');if(b.disabled)return;lockButton(b,true);try{await window.TPG_STABILITY.run(()=>createOrUpdateOrder('open'));alert('ບັນທຶກອໍເດີແລ້ວ')}catch(e){showError(e)}finally{lockButton(b,false)}};
 $('#newOrderBtn').onclick=()=>resetOrder(true);
 function resetOrder(confirmFirst=false){if(confirmFirst&&cart.length&&!confirm('ເປີດບິນໃໝ່ ແລະ ລ້າງລາຍການປັດຈຸບັນ?'))return;cart=[];currentOrder=null;$('#orderNote').value='';$('#discount').value=0;$('#vatRate').value=restaurantSettings.vat_rate;updateOrderBadge();renderCart()}
 function updateOrderBadge(){const label=currentOrder?.id?`${currentOrder.order_number} • ${currentOrder.table_number?'ຕູບ '+currentOrder.table_number:'Takeaway'}`:'ບິນໃໝ່ (ຍັງບໍ່ບັນທຶກ)';$('#orderBadge').textContent=label;$('#cartOrderNo').textContent=currentOrder?.order_number||'ບິນໃໝ່'}
@@ -110,7 +108,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCheckout()});
 $('#checkoutBtn').onclick=async()=>{try{if(!cart.length)throw new Error('ກະລຸນາເລືອກອາຫານກ່ອນ');await createOrUpdateOrder('ready_to_pay');const t=totals();$('#payTotal').textContent=money(t.grand);$('#receivedAmount').value=Math.round(t.grand);calcChange();openCheckout()}catch(e){showError(e)}};
 function calcChange(){const t=totals(),received=Number($('#receivedAmount').value||0);$('#changeAmount').textContent=money(Math.max(0,received-t.grand))}
 $('#receivedAmount').oninput=calcChange;$('#paymentMethod').onchange=()=>{if($('#paymentMethod').value!=='cash')$('#receivedAmount').value=Math.round(totals().grand);calcChange()};
-$('#confirmPaymentBtn').onclick=async()=>{const b=$('#confirmPaymentBtn');if(b.disabled)return;b.disabled=true;try{await window.TPG_AUTH.ensureSession();if(!currentOrder?.id)throw new Error('ບໍ່ພົບບິນ ກະລຸນາກົດຄິດເງິນໃໝ່');const t=totals(),method=$('#paymentMethod').value,received=Number($('#receivedAmount').value||0);if(method==='cash'&&received<t.grand)throw new Error('ເງິນຮັບບໍ່ພໍ');const payment={order_id:currentOrder.id,method,amount:t.grand,received_amount:received,change_amount:Math.max(0,received-t.grand),paid_by:user.id};const {error:pErr}=await client.from('payments').insert(payment);if(pErr)throw pErr;const closed=new Date().toISOString();const {data,error}=await client.from('orders').update({status:'paid',closed_by:user.id,closed_at:closed}).eq('id',currentOrder.id).select().single();if(error)throw error;lastPaidOrder=data;closeCheckout();showReceipt(data,t);loadPrinterSettings();if(printerSettings.autoPrintAfterPay){directPrintReceipt().catch(e=>showError(e))}await Promise.all([loadOpenOrders(),loadHistory()]);resetOrder(false)}catch(e){await showError(e)}finally{b.disabled=false}};
+$('#confirmPaymentBtn').onclick=async()=>{const b=$('#confirmPaymentBtn');if(b.disabled)return;lockButton(b,true,'ກຳລັງຊຳລະ...');try{if(!currentOrder?.id)throw new Error('ບໍ່ພົບບິນ ກະລຸນາກົດຄິດເງິນໃໝ່');const t=totals(),method=$('#paymentMethod').value,received=Number($('#receivedAmount').value||0);if(method==='cash'&&received<t.grand)throw new Error('ເງິນຮັບບໍ່ພໍ');const payment={order_id:currentOrder.id,method,amount:t.grand,received_amount:received,change_amount:Math.max(0,received-t.grand),paid_by:user.id};const {error:pErr}=await client.from('payments').insert(payment);if(pErr)throw pErr;const closed=new Date().toISOString();const {data,error}=await client.from('orders').update({status:'paid',closed_by:user.id,closed_at:closed}).eq('id',currentOrder.id).select().single();if(error)throw error;lastPaidOrder=data;closeCheckout();showReceipt(data,t);loadPrinterSettings();if(printerSettings.autoPrintAfterPay){directPrintReceipt().catch(e=>showError(e))}await Promise.all([loadOpenOrders(),loadHistory()]);resetOrder(false)}catch(e){showError(e)}finally{lockButton(b,false)}};
 
 function showReceipt(order,t){$('#rOrderNo').textContent=order.order_number;$('#rDate').textContent=new Date(order.closed_at||Date.now()).toLocaleString();$('#rTable').textContent=order.table_number||'Takeaway';$('#rItems').innerHTML=cart.map(x=>`<tr><td>${x.item_name}</td><td>${x.quantity}</td><td>${money(x.unit_price*x.quantity)}</td></tr>`).join('');$('#rSubtotal').textContent=money(t.subtotal);$('#rDiscount').textContent=money(t.discount);$('#rVat').textContent=money(t.vat);$('#rTotal').textContent=money(t.grand);$('#receipt').hidden=false;document.body.style.overflow='hidden'}
 $('#printBtn').onclick=()=>window.print();

@@ -1,18 +1,9 @@
-Tum Pa Guay POS V8.3 - Stable Production
+TUM PA GUAY POS V8.3 STABLE PRODUCTION
 
-แก้ปัญหาหลัก:
-- JWT expired: ต่ออายุ Session อัตโนมัติ
-- เปิดทิ้งไว้ใช้งานทั้งวันได้เสถียรกว่าเดิม
-- ตรวจ Session เมื่อกลับมาเปิดหน้าต่าง/แอป
-- เชื่อมต่อใหม่เมื่ออินเทอร์เน็ตกลับมา
-- ป้องกันการกดบันทึกซ้ำ
-- อัปเดต Service Worker cache เป็น V8.3
+1. คัดลอกไฟล์ทั้งหมดไปแทนที่ Repository เดิม
+2. Commit: Upgrade to V8.3 Stable Production
+3. Push origin และรอ GitHub Pages deploy
+4. ปิด PWA/Chrome ทุกหน้าต่าง แล้วเปิดใหม่
+5. ไม่ต้องรัน SQL เพิ่ม หาก V8.2 ทำงานแล้ว
 
-การติดตั้ง:
-1) นำไฟล์ทั้งหมดขึ้น GitHub แทน V8.2
-2) Commit: Upgrade to V8.3 Stable
-3) Push origin
-4) ปิดแอป PWA/เบราว์เซอร์ แล้วเปิดใหม่ 1 ครั้ง
-5) หากยังเห็นเวอร์ชันเก่า ให้ล้าง cache หรือถอนแอปแล้วติดตั้งใหม่
-
-ไม่ต้องรัน SQL เพิ่มสำหรับ V8.3
+V8.3 แก้: JWT expired, ต่ออายุ session อัตโนมัติ, reconnect เมื่อเน็ตกลับมา, ป้องกันกดบันทึก/ชำระเงินซ้ำ, cache ใหม่
