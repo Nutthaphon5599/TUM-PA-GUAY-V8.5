@@ -4,12 +4,33 @@ let client=null,user=null,orders=[],payments=[],items=[],categories=[],menus=[],
 const configured=()=>cfg?.SUPABASE_URL?.startsWith("https://")&&!String(cfg?.SUPABASE_ANON_KEY||"").includes("PASTE_");
 if(configured())client=window.TPG_STABILITY.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);else $("#loginStatus").textContent="ກະລຸນາກວດສອບ config.js";
 function isoDate(d){return d.toISOString().slice(0,10)}
+function displayDate(iso){
+  const m=String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?`${m[3]}/${m[2]}/${m[1]}`:"";
+}
+function parseDisplayDate(value){
+  const m=String(value||"").trim().match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if(!m)return "";
+  const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]);
+  const d=new Date(year,month-1,day);
+  if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day)return "";
+  return `${String(year).padStart(4,"0")}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+}
+function syncDateDisplay(id){const input=$(id),display=$(`${id}Display`);if(input&&display)display.value=displayDate(input.value)}
+function syncDateInput(id){const input=$(id),display=$(`${id}Display`);if(!input||!display)return false;const iso=parseDisplayDate(display.value);if(!iso)return false;input.value=iso;display.value=displayDate(iso);return true}
+function setupDateControl(id,pickerId){
+  const input=$(id),display=$(`${id}Display`),picker=$(pickerId);
+  input.addEventListener("change",()=>syncDateDisplay(id));
+  display.addEventListener("input",()=>{let v=display.value.replace(/\D/g,"").slice(0,8);if(v.length>4)v=`${v.slice(0,2)}/${v.slice(2,4)}/${v.slice(4)}`;else if(v.length>2)v=`${v.slice(0,2)}/${v.slice(2)}`;display.value=v});
+  display.addEventListener("blur",()=>{if(!syncDateInput(id)){display.setCustomValidity("Use DD/MM/YYYY");}else display.setCustomValidity("")});
+  picker.addEventListener("click",()=>{if(typeof input.showPicker==="function")input.showPicker();else input.click()});
+}
 function localStart(v){return new Date(v+"T00:00:00").toISOString()}
 function localEnd(v){return new Date(v+"T23:59:59.999").toISOString()}
 function normalize(v){return String(v||"").trim().toLocaleLowerCase().replace(/\s+/g," ")}
-function setToday(){const d=new Date();$("#dateFrom").value=$("#dateTo").value=isoDate(d)}
-function setMonth(){const d=new Date();$("#dateFrom").value=isoDate(new Date(d.getFullYear(),d.getMonth(),1));$("#dateTo").value=isoDate(d)}
-setMonth();$("#todayBtn").onclick=()=>{setToday();loadReport()};$("#monthBtn").onclick=()=>{setMonth();loadReport()};
+function setToday(){const d=new Date();$("#dateFrom").value=$("#dateTo").value=isoDate(d);syncDateDisplay("#dateFrom");syncDateDisplay("#dateTo")}
+function setMonth(){const d=new Date();$("#dateFrom").value=isoDate(new Date(d.getFullYear(),d.getMonth(),1));$("#dateTo").value=isoDate(d);syncDateDisplay("#dateFrom");syncDateDisplay("#dateTo")}
+setupDateControl("#dateFrom","#dateFromPicker");setupDateControl("#dateTo","#dateToPicker");setMonth();$("#todayBtn").onclick=()=>{setToday();loadReport()};$("#monthBtn").onclick=()=>{setMonth();loadReport()};
 async function enter(u){user=u;$("#login").hidden=true;$("#app").hidden=false;$("#logout").hidden=false;$("#userEmail").textContent=u.email||"";await loadMenuMetadata();await loadReport()}
 async function init(){if(!client)return;const session=await window.TPG_STABILITY.ensureSession();if(session)await enter(session.user)}
 $("#loginBtn").onclick=async()=>{const {data,error}=await client.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)$("#loginStatus").textContent=error.message;else enter(data.user)};
@@ -39,7 +60,7 @@ function itemFacts(){
 }
 async function loadReport(){
   try{
-    const from=$("#dateFrom").value,to=$("#dateTo").value;if(!from||!to)throw new Error("ກະລຸນາເລືອກວັນທີ");
+    if(!syncDateInput("#dateFrom")||!syncDateInput("#dateTo"))throw new Error("ກະລຸນາໃສ່ວັນທີແບບ DD/MM/YYYY");const from=$("#dateFrom").value,to=$("#dateTo").value;if(!from||!to)throw new Error("ກະລຸນາເລືອກວັນທີ");
     let q=client.from("orders").select("*").eq("status","paid").gte("closed_at",localStart(from)).lte("closed_at",localEnd(to)).order("closed_at",{ascending:false}).limit(5000);
     const bill=$("#billSearch").value.trim(),table=$("#tableSearch").value;if(bill)q=q.ilike("order_number",`%${bill}%`);if(table)q=q.eq("table_number",Number(table));
     const {data,error}=await q;if(error)throw error;orders=data||[];const ids=orders.map(o=>o.id);payments=[];items=[];
@@ -75,5 +96,5 @@ function render(){
 function csvEscape(v){return `"${String(v??"").replaceAll('"','""')}"`}
 function download(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $("#exportCsv").onclick=()=>{const pay={};payments.forEach(p=>pay[p.order_id]=p.method);const rows=[["date","bill","table","subtotal","discount","vat","total","payment"],...orders.map(o=>[o.closed_at,o.order_number,o.table_number||"Takeaway",o.subtotal,o.discount,o.vat_amount,o.grand_total,pay[o.id]||""])];download(`tum-pa-guay-sales-${$("#dateFrom").value}-to-${$("#dateTo").value}.csv`,rows.map(r=>r.map(csvEscape).join(",")).join("\n"),"text/csv;charset=utf-8")};
-$("#backupJson").onclick=()=>download(`tum-pa-guay-backup-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({version:"8.5.1",exported_at:new Date().toISOString(),filters:{from:$("#dateFrom").value,to:$("#dateTo").value},orders,payments,order_items:items},null,2),"application/json");
+$("#backupJson").onclick=()=>download(`tum-pa-guay-backup-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({version:"8.5.2",exported_at:new Date().toISOString(),filters:{from:$("#dateFrom").value,to:$("#dateTo").value},orders,payments,order_items:items},null,2),"application/json");
 init();

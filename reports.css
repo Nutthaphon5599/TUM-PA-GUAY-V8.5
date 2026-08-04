@@ -84,3 +84,22 @@ header{width:100%;min-width:0}
   nav{grid-template-columns:repeat(3,1fr)}
   .category-card{grid-template-columns:auto 1fr}.category-card>b{grid-column:2}
 }
+
+
+/* V8.5.2 Mobile Date Fields Fix */
+.date-filter{min-width:190px}
+.date-control{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;border:1px solid #ccd3ce;border-radius:11px;background:#fff;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.date-control:focus-within{border-color:#0b5b3e;box-shadow:0 0 0 3px #0b5b3e18}
+.filters .date-display{width:100%;min-width:0;border:0!important;border-radius:0!important;padding:11px 10px;font-size:16px;font-variant-numeric:tabular-nums;letter-spacing:.02em;outline:0;background:transparent;text-align:center}
+.date-picker-button{width:44px;height:42px;padding:0!important;border:0!important;border-left:1px solid #e2e7e3!important;border-radius:0!important;background:#f7f9f7!important;display:grid;place-items:center;font-size:18px;cursor:pointer}
+.native-date-input{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;inset:auto 0 0 auto!important;padding:0!important;border:0!important}
+@media(max-width:700px){
+  .filters .date-filter{min-width:0;width:100%}
+  .date-control{width:100%;min-height:46px}
+  .filters .date-display{min-height:44px;padding:10px 8px;font-size:16px}
+  .date-picker-button{height:44px}
+}
+@media(max-width:390px){
+  .filters .date-filter{grid-column:auto}
+  .date-control{grid-template-columns:minmax(0,1fr) 46px}
+}
