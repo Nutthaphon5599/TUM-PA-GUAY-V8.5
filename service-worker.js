@@ -1,4 +1,4 @@
-const VERSION = "v84-pending-payment-1";
+const VERSION = "v85-dashboard-language-1";
 const STATIC_CACHE = `tpg-static-${VERSION}`;
 const IMAGE_CACHE = `tpg-images-${VERSION}`;
 const CORE = [

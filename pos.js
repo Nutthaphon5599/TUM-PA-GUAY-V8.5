@@ -14,7 +14,7 @@ function showError(err){console.error(err);alert(window.TPG_STABILITY?.friendly(
 function lockButton(btn,locked,label='ກຳລັງດຳເນີນການ...'){if(!btn)return; if(locked){btn.dataset.oldText=btn.textContent;btn.disabled=true;btn.textContent=label}else{btn.disabled=false;btn.textContent=btn.dataset.oldText||btn.textContent}}
 
 if(configured()) client=window.TPG_STABILITY.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
-else $('#loginStatus').textContent='กรุณาตรวจ config.js';
+else $('#loginStatus').textContent='ກະລຸນາກວດສອບ config.js';
 
 async function initSession(){if(!client)return;try{const session=await window.TPG_STABILITY.ensureSession();if(session)await enter(session.user)}catch(e){console.warn(e)}}
 $('#loginBtn').onclick=async()=>{if(!client)return;$('#loginStatus').textContent='ກຳລັງເຂົ້າລະບົບ...';const {data,error}=await client.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});if(error)$('#loginStatus').textContent=error.message;else await enter(data.user)};
@@ -41,7 +41,7 @@ async function loadCategories(){const {data,error}=await client.from('categories
 async function loadMenus(){const {data,error}=await client.from('menu_items').select('id,category_id,name_lo,name_th,name_en,price,image_url,sort_order,categories(name_lo)').eq('available',true).order('sort_order');if(error)throw error;menus=data||[];writeMenuCache();renderMenus()}
 async function loadTables(){
   const {data,error}=await client.from('restaurant_tables').select('*').order('table_number');
-  if(error){throw new Error('กรุณารัน V7-POS-MIGRATION.sql ก่อน: '+error.message)}
+  if(error){throw new Error('ກະລຸນາ Run V7-POS-MIGRATION.sql ກ່ອນ: '+error.message)}
   allTables=data||[];tables=allTables.filter(t=>t.active);renderTableSelect();renderTables();updateTableManager();
 }
 function renderTableSelect(){const old=$('#tableSelect').value;$('#tableSelect').innerHTML='<option value="">Takeaway</option>'+tables.map(t=>`<option value="${t.id}" data-number="${t.table_number}">ຕູບ ${t.table_number}</option>`).join('');if([...$('#tableSelect').options].some(o=>o.value===old))$('#tableSelect').value=old}
@@ -68,7 +68,7 @@ function totals(){
   return{itemTotal,subtotal,discount,vatRate,vat,grand:subtotal+vat,vatMode:'exclusive'};
 }
 function updatePaymentActions(){const pending=currentOrder?.status==='ready_to_pay';const f=$('#finalizePaymentBtn');if(f)f.hidden=!pending;const c=$('#checkoutBtn');if(c)c.textContent=pending?'ອອກບິນກວດສອບໃໝ່':'ອອກບິນກວດສອບ'}
-function renderCart(){$('#cartItems').innerHTML=cart.length?'':'<p class="empty">ແຕະເມນູທາງຊ້າຍ</p>';cart.forEach((x,i)=>{const row=document.createElement('div');row.className='cart-row';row.innerHTML=`<div><h4>${x.item_name}</h4><small>${money(x.unit_price)} × ${x.quantity} = ${money(x.unit_price*x.quantity)}</small><br><button class="remove">ລົບ</button></div><div class="qty"><button aria-label="ลด">−</button><b>${x.quantity}</b><button aria-label="เพิ่ม">+</button></div>`;const bs=row.querySelectorAll('.qty button');bs[0].onclick=()=>changeQty(i,-1);bs[1].onclick=()=>changeQty(i,1);row.querySelector('.remove').onclick=()=>{cart.splice(i,1);renderCart()};$('#cartItems').appendChild(row)});const t=totals();$('#cartCountBadge').textContent=cart.reduce((n,x)=>n+x.quantity,0);$('#subtotal').textContent=money(t.subtotal);$('#vatAmount').textContent=money(t.vat);$('#grandTotal').textContent=money(t.grand);updatePaymentActions()}
+function renderCart(){$('#cartItems').innerHTML=cart.length?'':'<p class="empty">ແຕະເມນູທາງຊ້າຍ</p>';cart.forEach((x,i)=>{const row=document.createElement('div');row.className='cart-row';row.innerHTML=`<div><h4>${x.item_name}</h4><small>${money(x.unit_price)} × ${x.quantity} = ${money(x.unit_price*x.quantity)}</small><br><button class="remove">ລົບ</button></div><div class="qty"><button aria-label="ຫຼຸດ">−</button><b>${x.quantity}</b><button aria-label="ເພີ່ມ">+</button></div>`;const bs=row.querySelectorAll('.qty button');bs[0].onclick=()=>changeQty(i,-1);bs[1].onclick=()=>changeQty(i,1);row.querySelector('.remove').onclick=()=>{cart.splice(i,1);renderCart()};$('#cartItems').appendChild(row)});const t=totals();$('#cartCountBadge').textContent=cart.reduce((n,x)=>n+x.quantity,0);$('#subtotal').textContent=money(t.subtotal);$('#vatAmount').textContent=money(t.vat);$('#grandTotal').textContent=money(t.grand);updatePaymentActions()}
 $('#discount').oninput=renderCart;$('#vatRate').oninput=renderCart;$('#clearCartBtn').onclick=()=>{if(!cart.length||confirm('ລ້າງລາຍການທັງໝົດ?')){cart=[];renderCart()}};
 
 function generateOrderNo(){const d=new Date(),date=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`,time=`${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;return `TPG-${date}-${time}-${Math.floor(Math.random()*90+10)}`}
