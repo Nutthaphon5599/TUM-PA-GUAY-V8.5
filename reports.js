@@ -53,8 +53,11 @@ function aggregateMenu(facts){
 }
 function renderTopMenu(){
   const facts=itemFacts().filter(x=>selectedCategory==="all"||x.category_id===selectedCategory);
-  const top=aggregateMenu(facts),rows=Object.entries(top).sort((a,b)=>b[1].qty-a[1].qty).slice(0,10),categoryTotal=Object.values(top).reduce((s,v)=>s+v.total,0);
-  $("#topMenu").innerHTML=rows.map(([k,v],i)=>{const pct=categoryTotal?v.total/categoryTotal*100:0;const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`;return `<article class="rank-row"><div class="rank-main"><span class="rank-badge">${medal}</span><div><strong>${k}</strong><small>${v.qty.toLocaleString()} ຈານ • ${pct.toFixed(1)}%</small></div><b>${money(v.total)}</b></div><div class="progress"><span style="width:${Math.min(100,pct)}%"></span></div></article>`}).join("")||'<p class="empty">ບໍ່ມີຂໍ້ມູນເມນູ</p>';
+  const top=aggregateMenu(facts);
+  const rows=Object.entries(top).sort((a,b)=>b[1].qty-a[1].qty||b[1].total-a[1].total).slice(0,50);
+  const categoryTotal=Object.values(top).reduce((s,v)=>s+v.total,0);
+  if(!rows.length){$("#topMenu").innerHTML='<p class="empty">ບໍ່ມີຂໍ້ມູນເມນູ</p>';return}
+  $("#topMenu").innerHTML=`<div class="top-menu-table-wrap"><table class="top-menu-table"><thead><tr><th class="rank-col">ອັນດັບ</th><th>ເມນູ</th><th class="number-col">ຈຳນວນ</th><th class="number-col">%</th><th class="money-col">ຍອດຂາຍ</th></tr></thead><tbody>${rows.map(([name,v],i)=>{const pct=categoryTotal?v.total/categoryTotal*100:0;const rank=i===0?"🥇":i===1?"🥈":i===2?"🥉":String(i+1);return `<tr><td class="rank-col"><span class="table-rank">${rank}</span></td><td><strong>${name}</strong></td><td class="number-col">${v.qty.toLocaleString()}</td><td class="number-col">${pct.toFixed(1)}%</td><td class="money-col"><b>${money(v.total)}</b></td></tr>`}).join("")}</tbody></table></div>`;
 }
 function renderCategorySummary(){
   const facts=itemFacts(),totals={};facts.forEach(x=>{totals[x.category_id]=(totals[x.category_id]||0)+Number(x.line_total||Number(x.unit_price||0)*Number(x.quantity||0))});
@@ -72,5 +75,5 @@ function render(){
 function csvEscape(v){return `"${String(v??"").replaceAll('"','""')}"`}
 function download(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $("#exportCsv").onclick=()=>{const pay={};payments.forEach(p=>pay[p.order_id]=p.method);const rows=[["date","bill","table","subtotal","discount","vat","total","payment"],...orders.map(o=>[o.closed_at,o.order_number,o.table_number||"Takeaway",o.subtotal,o.discount,o.vat_amount,o.grand_total,pay[o.id]||""])];download(`tum-pa-guay-sales-${$("#dateFrom").value}-to-${$("#dateTo").value}.csv`,rows.map(r=>r.map(csvEscape).join(",")).join("\n"),"text/csv;charset=utf-8")};
-$("#backupJson").onclick=()=>download(`tum-pa-guay-backup-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({version:"8.5.0",exported_at:new Date().toISOString(),filters:{from:$("#dateFrom").value,to:$("#dateTo").value},orders,payments,order_items:items},null,2),"application/json");
+$("#backupJson").onclick=()=>download(`tum-pa-guay-backup-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({version:"8.5-final",exported_at:new Date().toISOString(),filters:{from:$("#dateFrom").value,to:$("#dateTo").value},orders,payments,order_items:items},null,2),"application/json");
 init();
