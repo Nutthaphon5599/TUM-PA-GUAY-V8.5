@@ -45,7 +45,7 @@
             <p><span>Subtotal</span><strong id="subtotal">0 ກີບ</strong></p><p><span>VAT</span><strong id="vatAmount">0 ກີບ</strong></p>
             <p class="grand"><span>Grand Total</span><strong id="grandTotal">0 ກີບ</strong></p>
           </div>
-          <div class="cart-actions"><button id="saveOrderBtn">ບັນທຶກອໍເດີ</button><button id="checkoutBtn" class="primary">ຄິດເງິນ</button></div>
+          <div class="cart-actions"><button id="saveOrderBtn">ບັນທຶກອໍເດີ</button><button id="checkoutBtn" class="primary">ອອກບິນກວດສອບ</button><button id="finalizePaymentBtn" class="success" hidden>ຮັບເງິນ / ປິດບິນ</button></div>
         </aside>
       </div>
     </section>
@@ -92,7 +92,7 @@
 
 <section id="receipt" class="receipt" hidden>
   <div class="receipt-actions no-print"><button id="directPrintBtn" class="primary">⚡ ພິມກົງ SL-253</button><button id="printBtn">🖨️ Browser Print</button><button id="closeReceiptBtn">Close</button></div>
-  <div class="receipt-paper"><img src="logo.png" alt="PaGuay" class="receipt-logo"><h1>ຮ້ານຕຳຕູບປ່າກ້ວຍ</h1><p>TUM PA GUAY RESTAURANT</p><h2>RECEIPT / ໃບບິນຮັບເງິນ</h2>
+  <div class="receipt-paper"><img src="logo.png" alt="PaGuay" class="receipt-logo"><h1>ຮ້ານຕຳຕູບປ່າກ້ວຍ</h1><p>TUM PA GUAY RESTAURANT</p><h2 id="rReceiptTitle">RECEIPT / ໃບບິນຮັບເງິນ</h2><p id="rPendingNotice" class="pending-notice" hidden>ບິນກວດສອບ • ຍັງບໍ່ຊຳລະ • ສາມາດກັບໄປແກ້ໄຂລາຍການໄດ້</p>
     <div class="receipt-meta"><span>Bill: <b id="rOrderNo"></b></span><span>Date: <b id="rDate"></b></span><span>ຕູບ: <b id="rTable"></b></span></div>
     <table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody id="rItems"></tbody></table>
     <div class="receipt-totals"><p><span>Subtotal</span><b id="rSubtotal"></b></p><p><span>Discount</span><b id="rDiscount"></b></p><p><span>VAT</span><b id="rVat"></b></p><p class="grand"><span>Grand Total</span><b id="rTotal"></b></p></div><p class="thanks">ຂອບໃຈທີ່ມາອຸດໜູນ • Thank you</p>
