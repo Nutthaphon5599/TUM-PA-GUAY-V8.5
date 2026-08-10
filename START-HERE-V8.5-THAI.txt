@@ -1,7 +1,0 @@
-TUM PA GUAY POS V8.5
-
-1. คัดลอกไฟล์ทั้งหมดไปแทน Repository เดิม
-2. Commit: Upgrade to V8.5 Dashboard & Lao Language
-3. Push origin
-4. ไม่ต้องรัน SQL เพิ่ม
-5. ปิดและเปิด PWA ใหม่หลัง GitHub Pages deploy
