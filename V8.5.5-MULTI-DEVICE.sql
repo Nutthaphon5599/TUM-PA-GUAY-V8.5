@@ -7,7 +7,7 @@ create table if not exists public.pos_table_locks (
   device_label text not null default 'POS',
   user_id uuid references auth.users(id) on delete set null,
   locked_at timestamptz not null default now(),
-  expires_at timestamptz not null default (now() + interval '2 minutes')
+  expires_at timestamptz not null default (now() + interval '30 seconds')
 );
 
 alter table public.pos_table_locks enable row level security;
@@ -25,8 +25,8 @@ begin
     return jsonb_build_object('ok',false,'device_label',v_lock.device_label,'expires_at',v_lock.expires_at);
   end if;
   insert into public.pos_table_locks(table_id,device_id,device_label,user_id,locked_at,expires_at)
-  values(p_table_id,p_device_id,coalesce(nullif(p_device_label,''),'POS'),auth.uid(),now(),now()+interval '2 minutes')
-  on conflict(table_id) do update set device_id=excluded.device_id,device_label=excluded.device_label,user_id=excluded.user_id,locked_at=now(),expires_at=now()+interval '2 minutes';
+  values(p_table_id,p_device_id,coalesce(nullif(p_device_label,''),'POS'),auth.uid(),now(),now()+interval '30 seconds')
+  on conflict(table_id) do update set device_id=excluded.device_id,device_label=excluded.device_label,user_id=excluded.user_id,locked_at=now(),expires_at=now()+interval '30 seconds';
   return jsonb_build_object('ok',true);
 end $$;
 

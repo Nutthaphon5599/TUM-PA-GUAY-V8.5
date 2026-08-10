@@ -1,4 +1,4 @@
-const VERSION = "v855-mobile-pos-1";
+const VERSION = "v8551-fast-lock-release-1";
 const STATIC_CACHE = `tpg-static-${VERSION}`;
 const IMAGE_CACHE = `tpg-images-${VERSION}`;
 const CORE = [

@@ -12,7 +12,7 @@ const DEVICE_ID_KEY='tpg-v855-device-id';
 const DEVICE_ID=localStorage.getItem(DEVICE_ID_KEY)||((crypto.randomUUID&&crypto.randomUUID())||('dev-'+Date.now()+'-'+Math.random().toString(36).slice(2)));
 localStorage.setItem(DEVICE_ID_KEY,DEVICE_ID);
 const DEVICE_LABEL=/iPhone|iPad|Android/i.test(navigator.userAgent)?'Mobile POS':'Computer POS';
-let lockedTableId=null, lockHeartbeat=null, realtimeChannel=null, remoteLocks=[];
+let lockedTableId=null, lockHeartbeat=null, realtimeChannel=null, remoteLocks=[], pagehideAccessToken=null;
 function lockOwnerText(lock){return lock?.device_label||'another device'}
 async function refreshLocks(){
   if(!client)return; const {data,error}=await client.from('pos_table_locks').select('*').gt('expires_at',new Date().toISOString());
@@ -29,11 +29,26 @@ async function acquireTableLock(tableId){
   lockedTableId=tableId; startLockHeartbeat(); await refreshLocks(); return true;
 }
 async function heartbeatLock(){if(!lockedTableId||!client)return;await client.rpc('acquire_pos_table_lock',{p_table_id:lockedTableId,p_device_id:DEVICE_ID,p_device_label:DEVICE_LABEL})}
-function startLockHeartbeat(){clearInterval(lockHeartbeat);lockHeartbeat=setInterval(()=>heartbeatLock().catch(console.warn),30000)}
+function startLockHeartbeat(){clearInterval(lockHeartbeat);lockHeartbeat=setInterval(()=>heartbeatLock().catch(console.warn),10000)}
 async function releaseTableLock(){
   clearInterval(lockHeartbeat);lockHeartbeat=null;
-  if(lockedTableId&&client){const id=lockedTableId;lockedTableId=null;await client.rpc('release_pos_table_lock',{p_table_id:id,p_device_id:DEVICE_ID}).catch?.(()=>{})}
+  if(lockedTableId&&client){
+    const id=lockedTableId;
+    lockedTableId=null; // clear locally first so UI is not held by a slow network response
+    try{await client.rpc('release_pos_table_lock',{p_table_id:id,p_device_id:DEVICE_ID})}catch(e){console.warn('release lock',e)}
+  }
   await refreshLocks();
+}
+function releaseTableLockKeepalive(){
+  if(!lockedTableId||!pagehideAccessToken||!cfg?.SUPABASE_URL)return;
+  const id=lockedTableId; lockedTableId=null;
+  try{
+    fetch(`${cfg.SUPABASE_URL}/rest/v1/rpc/release_pos_table_lock`,{
+      method:'POST',keepalive:true,
+      headers:{'Content-Type':'application/json','apikey':cfg.SUPABASE_ANON_KEY,'Authorization':`Bearer ${pagehideAccessToken}`},
+      body:JSON.stringify({p_table_id:id,p_device_id:DEVICE_ID})
+    }).catch(()=>{});
+  }catch(_){}
 }
 function setupRealtime(){
   if(!client||realtimeChannel)return;
@@ -43,7 +58,8 @@ function setupRealtime(){
     .on('postgres_changes',{event:'*',schema:'public',table:'pos_table_locks'},()=>refreshLocks().catch(console.warn))
     .subscribe();
 }
-window.addEventListener('pagehide',()=>{if(lockedTableId&&client)client.rpc('release_pos_table_lock',{p_table_id:lockedTableId,p_device_id:DEVICE_ID})});
+window.addEventListener('pagehide',releaseTableLockKeepalive);
+window.addEventListener('beforeunload',releaseTableLockKeepalive);
 function readMenuCache(){try{const raw=localStorage.getItem(MENU_CACHE_KEY)||localStorage.getItem(LEGACY_MENU_CACHE_KEY)||'null';const c=JSON.parse(raw);return c&&Date.now()-c.savedAt<CACHE_MAX_AGE?c:null}catch(_){return null}}
 function writeMenuCache(){try{localStorage.setItem(MENU_CACHE_KEY,JSON.stringify({savedAt:Date.now(),categories,menus}))}catch(_){}}
 const money=n=>`${Math.round(Number(n||0)).toLocaleString()} ກີບ`;
@@ -61,6 +77,7 @@ $('#logoutBtn').onclick=async()=>{await client.auth.signOut();location.reload()}
 async function enter(u){
   try{
     user=u;
+    try{const {data:{session}}=await client.auth.getSession();pagehideAccessToken=session?.access_token||null}catch(_){}
     const cached=readMenuCache();
     if(cached){
       categories=cached.categories||[];menus=cached.menus||[];
@@ -75,7 +92,15 @@ async function enter(u){
   }catch(e){showError(e)}
 }
 
-document.querySelectorAll('[data-view]').forEach(btn=>btn.onclick=async()=>{document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${btn.dataset.view}`));if(btn.dataset.view==='tables'){await loadOpenOrders();await loadTables()}if(btn.dataset.view==='history')await loadHistory()});
+document.querySelectorAll('[data-view]').forEach(btn=>btn.onclick=async()=>{
+  // V8.5.5.1: leaving the sale/table editing view means this device is finished editing that table.
+  // Release immediately so another POS can open it without waiting for the safety timeout.
+  if(btn.dataset.view!=='sale'&&lockedTableId)await releaseTableLock();
+  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b===btn));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${btn.dataset.view}`));
+  if(btn.dataset.view==='tables'){await loadOpenOrders();await loadTables();await refreshLocks()}
+  if(btn.dataset.view==='history')await loadHistory()
+});
 
 async function loadRestaurantSettings(){
   try{
