@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Tum Pa Guay POS V8.5</title>
+  <title>Tum Pa Guay POS V8.5.3</title>
   <link rel="stylesheet" href="pos.css"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#062d20">
 </head>
 <body>
 <header class="pos-header">
-  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.5</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
+  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.5.3</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
   <nav><a href="admin.html">Dashboard</a><a href="reports.html">Reports</a><a href="index.html">Website</a><span id="posUser"></span><button id="logoutBtn" hidden>Logout</button></nav>
 </header>
 <main>
@@ -53,7 +53,9 @@
     <section id="view-tables" class="view">
       <div class="section-head"><div><h2>ຈັດການຕູບ</h2><p>ເລີ່ມຕົ້ນ 90 ຕູບ ແລະ ສາມາດເພີ່ມ/ຫຼຸດໄດ້</p></div><button id="refreshTables">Refresh</button></div>
       <div class="table-manager">
-        <div><small>ຈຳນວນຕູບທີ່ໃຊ້ງານ</small><strong id="activeTableCount">0</strong></div>
+        <div class="table-stat total"><small>ຈຳນວນຕູບທັງໝົດ</small><strong id="activeTableCount">0</strong></div>
+        <div class="table-stat busy-stat"><small>ກຳລັງໃຊ້ງານ</small><strong id="busyTableCount">0</strong></div>
+        <div class="table-stat ready-stat"><small>ກຳລັງຄິດເງິນ</small><strong id="readyTableCount">0</strong></div>
         <button id="removeTableBtn" class="danger-btn">− ຫຼຸດ 1 ຕູບ</button>
         <button id="addTableBtn" class="primary">+ ເພີ່ມ 1 ຕູບ</button>
         <label>ຕັ້ງຈຳນວນທັງໝົດ <input id="targetTableCount" type="number" min="1" max="500" value="90"><button id="setTableCountBtn">ບັນທຶກ</button></label>

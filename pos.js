@@ -3,9 +3,11 @@ const cfg=window.TPG_CONFIG;
 const $=s=>document.querySelector(s);
 let client=null,user=null,categories=[],menus=[],tables=[],allTables=[],orders=[],history=[],cart=[],currentOrder=null,lastPaidOrder=null;
 let restaurantSettings={vat_mode:"inclusive",vat_rate:10};
-const MENU_CACHE_KEY='tpg-v83-final-menu-cache';
-const CACHE_MAX_AGE=6*60*60*1000;
-function readMenuCache(){try{const c=JSON.parse(localStorage.getItem(MENU_CACHE_KEY)||'null');return c&&Date.now()-c.savedAt<CACHE_MAX_AGE?c:null}catch(_){return null}}
+const MENU_CACHE_KEY='tpg-v853-menu-cache';
+const LEGACY_MENU_CACHE_KEY='tpg-v83-final-menu-cache';
+const CACHE_MAX_AGE=24*60*60*1000;
+let menuImageObserver=null,menuRenderFrame=0;
+function readMenuCache(){try{const raw=localStorage.getItem(MENU_CACHE_KEY)||localStorage.getItem(LEGACY_MENU_CACHE_KEY)||'null';const c=JSON.parse(raw);return c&&Date.now()-c.savedAt<CACHE_MAX_AGE?c:null}catch(_){return null}}
 function writeMenuCache(){try{localStorage.setItem(MENU_CACHE_KEY,JSON.stringify({savedAt:Date.now(),categories,menus}))}catch(_){}}
 const money=n=>`${Math.round(Number(n||0)).toLocaleString()} ກີບ`;
 const configured=()=>cfg?.SUPABASE_URL?.startsWith('https://')&&!String(cfg?.SUPABASE_ANON_KEY||'').includes('PASTE_');
@@ -20,9 +22,20 @@ async function initSession(){if(!client)return;try{const session=await window.TP
 $('#loginBtn').onclick=async()=>{if(!client)return;$('#loginStatus').textContent='ກຳລັງເຂົ້າລະບົບ...';const {data,error}=await client.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#password').value});if(error)$('#loginStatus').textContent=error.message;else await enter(data.user)};
 $('#logoutBtn').onclick=async()=>{await client.auth.signOut();location.reload()};
 async function enter(u){
-  try{user=u;const cached=readMenuCache();if(cached){categories=cached.categories||[];menus=cached.menus||[];renderMenus();}$('#loginPanel').hidden=true;$('#posApp').hidden=false;$('#logoutBtn').hidden=false;$('#posUser').textContent=u.email||'Staff';
-  await loadRestaurantSettings();await Promise.all([loadCategories(),loadMenus(),loadTables(),loadOpenOrders(),loadHistory()]);renderAll()}
-  catch(e){showError(e)}
+  try{
+    user=u;
+    const cached=readMenuCache();
+    if(cached){
+      categories=cached.categories||[];menus=cached.menus||[];
+      renderCategoryFilter();renderMenus();
+    }
+    $('#loginPanel').hidden=true;$('#posApp').hidden=false;$('#logoutBtn').hidden=false;$('#posUser').textContent=u.email||'Staff';
+    // Critical POS data first; history is loaded only when the user opens History.
+    await Promise.all([loadRestaurantSettings(),loadTables(),loadOpenOrders()]);
+    renderAll();
+    // Refresh menu/catalog in background so cached menus appear instantly.
+    Promise.all([loadCategories(),loadMenus()]).catch(e=>console.warn('Menu background refresh',e));
+  }catch(e){showError(e)}
 }
 
 document.querySelectorAll('[data-view]').forEach(btn=>btn.onclick=async()=>{document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${btn.dataset.view}`));if(btn.dataset.view==='tables'){await loadOpenOrders();await loadTables()}if(btn.dataset.view==='history')await loadHistory()});
@@ -37,7 +50,8 @@ async function loadRestaurantSettings(){
   $('#vatModeLabel').textContent=restaurantSettings.vat_mode==='inclusive'?'VAT ລວມໃນລາຄາແລ້ວ':'VAT ບວກເພີ່ມທ້າຍບິນ';
 }
 
-async function loadCategories(){const {data,error}=await client.from('categories').select('*').eq('active',true).order('sort_order');if(error)throw error;categories=data||[];writeMenuCache();$('#categoryFilter').innerHTML='<option value="all">ທຸກໝວດ</option>'+categories.map(c=>`<option value="${c.id}">${c.name_lo||c.name_th||c.name_en||'Category'}</option>`).join('')}
+function renderCategoryFilter(){const f=$('#categoryFilter');if(!f)return;const old=f.value;f.innerHTML='<option value="all">ທຸກໝວດ</option>'+categories.map(c=>`<option value="${c.id}">${c.name_lo||c.name_th||c.name_en||'Category'}</option>`).join('');if([...f.options].some(o=>o.value===old))f.value=old}
+async function loadCategories(){const {data,error}=await client.from('categories').select('*').eq('active',true).order('sort_order');if(error)throw error;categories=data||[];writeMenuCache();renderCategoryFilter()}
 async function loadMenus(){const {data,error}=await client.from('menu_items').select('id,category_id,name_lo,name_th,name_en,price,image_url,sort_order,categories(name_lo)').eq('available',true).order('sort_order');if(error)throw error;menus=data||[];writeMenuCache();renderMenus()}
 async function loadTables(){
   const {data,error}=await client.from('restaurant_tables').select('*').order('table_number');
@@ -45,12 +59,35 @@ async function loadTables(){
   allTables=data||[];tables=allTables.filter(t=>t.active);renderTableSelect();renderTables();updateTableManager();
 }
 function renderTableSelect(){const old=$('#tableSelect').value;$('#tableSelect').innerHTML='<option value="">Takeaway</option>'+tables.map(t=>`<option value="${t.id}" data-number="${t.table_number}">ຕູບ ${t.table_number}</option>`).join('');if([...$('#tableSelect').options].some(o=>o.value===old))$('#tableSelect').value=old}
-async function loadOpenOrders(){const {data,error}=await client.from('orders').select('*').in('status',['open','ready_to_pay']).order('opened_at',{ascending:false});if(error)throw error;orders=data||[];renderTables()}
+async function loadOpenOrders(){const {data,error}=await client.from('orders').select('*').in('status',['open','ready_to_pay']).order('opened_at',{ascending:false});if(error)throw error;orders=data||[];renderTables();updateTableManager()}
 async function loadHistory(){const {data,error}=await client.from('orders').select('*').eq('status','paid').order('closed_at',{ascending:false}).limit(100);if(error)throw error;history=data||[];renderHistory()}
 
 function filteredMenus(){const q=$('#menuSearch').value.trim().toLowerCase(),cat=$('#categoryFilter').value;return menus.filter(m=>(cat==='all'||m.category_id===cat)&&`${m.name_lo||''} ${m.name_th||''} ${m.name_en||''}`.toLowerCase().includes(q))}
-function renderMenus(){$('#menuGrid').innerHTML='';filteredMenus().forEach(m=>{const el=document.createElement('article');el.className='menu-card';el.innerHTML=`<img alt="" loading="lazy" decoding="async" fetchpriority="low"><div><h3>${m.name_lo||m.name_th||m.name_en}</h3><strong>${money(m.price)}</strong></div>`;const img=el.querySelector('img');img.onerror=()=>{img.onerror=null;img.src=placeholder(m.name_lo)};img.src=m.image_url||placeholder(m.name_lo);el.onclick=()=>addToCart(m);$('#menuGrid').appendChild(el)})}
-$('#menuSearch').oninput=renderMenus;$('#categoryFilter').onchange=renderMenus;
+function ensureMenuImageObserver(){
+  if(menuImageObserver||!('IntersectionObserver' in window))return;
+  menuImageObserver=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(!entry.isIntersecting)return;const img=entry.target;const src=img.dataset.src;if(src){img.src=src;delete img.dataset.src}menuImageObserver.unobserve(img)})},{root:$('#menuGrid'),rootMargin:'450px 0px'});
+}
+function renderMenus(){
+  const grid=$('#menuGrid');if(!grid)return;
+  if(menuRenderFrame)cancelAnimationFrame(menuRenderFrame);
+  menuRenderFrame=requestAnimationFrame(()=>{
+    if(menuImageObserver)menuImageObserver.disconnect();
+    ensureMenuImageObserver();
+    const frag=document.createDocumentFragment();
+    filteredMenus().forEach((m,i)=>{
+      const el=document.createElement('article');el.className='menu-card';
+      const src=m.image_url||placeholder(m.name_lo);
+      const eager=i<12;
+      el.innerHTML=`<img alt="" loading="${eager?'eager':'lazy'}" decoding="async" fetchpriority="${eager?'high':'low'}"><div><h3>${m.name_lo||m.name_th||m.name_en}</h3><strong>${money(m.price)}</strong></div>`;
+      const img=el.querySelector('img');
+      img.onerror=()=>{img.onerror=null;img.src=placeholder(m.name_lo)};
+      if(eager||!menuImageObserver)img.src=src;else{img.dataset.src=src;img.src=placeholder('…');menuImageObserver.observe(img)}
+      el.onclick=()=>addToCart(m);frag.appendChild(el);
+    });
+    grid.replaceChildren(frag);
+  });
+}
+let menuSearchTimer=0;$('#menuSearch').oninput=()=>{clearTimeout(menuSearchTimer);menuSearchTimer=setTimeout(renderMenus,60)};$('#categoryFilter').onchange=renderMenus;
 function addToCart(m){const found=cart.find(x=>x.menu_item_id===m.id&&!x.variant);if(found)found.quantity++;else cart.push({menu_item_id:m.id,item_name:m.name_lo||m.name_th||m.name_en,unit_price:Number(m.price),quantity:1,variant:null,note:''});renderCart()}
 function changeQty(i,d){if(!cart[i])return;cart[i].quantity+=d;if(cart[i].quantity<=0)cart.splice(i,1);renderCart()}
 function totals(){
@@ -90,7 +127,7 @@ async function openExistingOrder(order){try{const {data,error}=await client.from
 function renderTables(){if(!$('#tableGrid'))return;$('#tableGrid').innerHTML='';tables.forEach(t=>{const o=orders.find(x=>x.table_id===t.id),el=document.createElement('article');el.className=`table-card ${o?(o.status==='ready_to_pay'?'ready':'busy'):''}`;el.innerHTML=`<h3>ຕູບ ${t.table_number}</h3><span>${o?(o.status==='ready_to_pay'?'ລໍຖ້າຄິດເງິນ':'ກຳລັງໃຊ້'):`ວ່າງ • ${t.capacity} ຄົນ`}</span>${o?`<p>${money(o.grand_total)}</p>`:''}`;el.onclick=()=>{if(o)openExistingOrder(o);else{resetOrder(false);$('#tableSelect').value=t.id;document.querySelector('[data-view="sale"]').click()}};$('#tableGrid').appendChild(el)})}
 $('#refreshTables').onclick=async()=>{try{await loadOpenOrders();await loadTables()}catch(e){showError(e)}};
 
-function updateTableManager(){$('#activeTableCount').textContent=tables.length;$('#targetTableCount').value=tables.length||90}
+function updateTableManager(){const busy=orders.filter(o=>o.status==='open'&&o.table_id).length,ready=orders.filter(o=>o.status==='ready_to_pay'&&o.table_id).length;$('#activeTableCount').textContent=tables.length;const b=$('#busyTableCount'),r=$('#readyTableCount');if(b)b.textContent=busy;if(r)r.textContent=ready;$('#targetTableCount').value=tables.length||90}
 async function addOneTable(){
   const inactive=allTables.filter(t=>!t.active).sort((a,b)=>a.table_number-b.table_number)[0];
   if(inactive){const {error}=await client.from('restaurant_tables').update({active:true}).eq('id',inactive.id);if(error)throw error}

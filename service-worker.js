@@ -1,4 +1,4 @@
-const VERSION = "v852-mobile-date-fields-1";
+const VERSION = "v853-table-status-performance-1";
 const STATIC_CACHE = `tpg-static-${VERSION}`;
 const IMAGE_CACHE = `tpg-images-${VERSION}`;
 const CORE = [
@@ -23,7 +23,7 @@ async function networkFirst(request) {
   const cache = await caches.open(STATIC_CACHE);
   try {
     const response = await fetch(request, { cache: "no-store" });
-    if (response.ok) cache.put(request, response.clone());
+    if (response && (response.ok || response.type === "opaque")) cache.put(request, response.clone());
     return response;
   } catch (_) {
     return (await cache.match(request)) || Response.error();
@@ -34,7 +34,7 @@ async function staleWhileRevalidate(request) {
   const cache = await caches.open(IMAGE_CACHE);
   const cached = await cache.match(request);
   const update = fetch(request).then((response) => {
-    if (response.ok) cache.put(request, response.clone());
+    if (response && (response.ok || response.type === "opaque")) cache.put(request, response.clone());
     return response;
   }).catch(() => null);
   return cached || update || Response.error();
@@ -43,12 +43,14 @@ async function staleWhileRevalidate(request) {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return;
 
+  // Cache menu images even when they come from Supabase Storage (cross-origin).
   if (event.request.destination === "image") {
     event.respondWith(staleWhileRevalidate(event.request));
     return;
   }
+
+  if (url.origin !== self.location.origin) return;
 
   if (["document", "script", "style"].includes(event.request.destination)) {
     event.respondWith(networkFirst(event.request));
