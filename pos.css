@@ -17,3 +17,47 @@
 .menu-card{content-visibility:auto;contain-intrinsic-size:210px 210px}
 .menu-card img{will-change:auto}
 @media(max-width:760px){.table-manager .table-stat{flex:1 1 calc(33.333% - 8px);min-width:100px}.table-manager .table-stat strong{font-size:26px}}
+
+
+/* V8.5.4 Mobile POS */
+.cart-toggle strong{font-size:13px;white-space:nowrap}
+.item-note{display:grid;gap:4px;margin-top:8px;font-size:12px;color:#5c675f}
+.item-note input{width:100%;border:1px solid #d7ddd8;border-radius:8px;padding:8px;font:inherit;background:#fbfcfb}
+@keyframes cartPulse{0%{transform:scale(1)}45%{transform:scale(1.05)}100%{transform:scale(1)}}
+.cart-toggle.cart-pulse{animation:cartPulse .36s ease}
+@media(max-width:760px){
+  body{padding-bottom:84px}
+  .pos-header{position:relative;padding:12px 16px;gap:10px;flex-direction:column}
+  .pos-header .brand{width:100%}.pos-header nav{width:100%;justify-content:flex-start;gap:8px}
+  .pos-header nav a,.pos-header nav button{min-height:44px;display:flex;align-items:center}
+  .mode-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .mode-tabs button,.mode-tabs a{min-height:48px;text-align:center;justify-content:center}
+  .current-order{display:grid;grid-template-columns:1fr auto;width:100%;gap:8px}
+  .current-order label{grid-column:1/2}.current-order select{width:100%;min-height:48px}
+  .current-order #newOrderBtn{min-height:48px}
+  .current-order #orderBadge{grid-column:1/-1;overflow-wrap:anywhere;line-height:1.35}
+  .help-strip{font-size:13px;line-height:1.5}
+  .catalog-panel{padding:12px}
+  .filters input,.filters select{min-height:48px;font-size:16px}
+  .menu-card{touch-action:manipulation}
+  .menu-card div{padding:10px 9px 12px}.menu-card h3{font-size:15px}.menu-card strong{font-size:18px}
+  .menu-card::after{width:38px;height:38px;font-size:27px;right:9px;top:9px}
+  .cart-toggle{display:grid;grid-template-columns:auto auto 1fr;align-items:center;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));width:auto;min-height:58px;border-radius:16px;padding:10px 16px;font-size:16px;z-index:46}
+  .cart-toggle .cart-toggle-label{text-align:left}.cart-toggle strong{text-align:right;font-size:15px}
+  .cart-panel{left:0;right:0;top:0;width:100vw;max-width:none;height:100dvh;border-radius:0;transform:translateY(105%);padding:58px 14px max(18px,env(safe-area-inset-bottom));transition:transform .22s ease}
+  .cart-open .cart-panel{transform:translateY(0)}
+  .cart-close{display:grid;position:fixed;top:max(10px,env(safe-area-inset-top));right:12px;z-index:2;width:44px;height:44px}
+  .cart-title{padding-right:50px}
+  .cart-items{padding-bottom:8px}
+  .cart-row{grid-template-columns:minmax(0,1fr) auto;padding:13px 0;gap:10px}
+  .qty{gap:8px}.qty button{width:44px;height:44px;font-size:26px}.qty b{min-width:24px;text-align:center;font-size:18px}
+  .remove{min-height:40px;padding:6px 0;font-weight:700}
+  .order-note textarea{min-height:64px;font-size:16px}
+  .totals input{min-height:42px;font-size:16px}
+  .cart-actions{position:sticky;bottom:0;background:#fff;padding-top:10px;grid-template-columns:1fr;box-shadow:0 -8px 18px #fff}
+  .cart-actions button{min-height:50px;font-size:16px;font-weight:700}
+  .modal{align-items:end}.modal-card{width:100%;max-width:none;border-radius:20px 20px 0 0;padding:26px 18px max(20px,env(safe-area-inset-bottom))}
+  .modal-card input,.modal-card select,.modal-card button{min-height:48px;font-size:16px}
+  .receipt{padding:10px 6px max(16px,env(safe-area-inset-bottom))}.receipt-paper{width:min(80mm,100%)}
+  .receipt-actions{width:100%;position:sticky;bottom:0;background:#222;padding:8px 0}.receipt-actions button{min-height:46px}
+}

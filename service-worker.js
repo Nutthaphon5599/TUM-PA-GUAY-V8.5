@@ -1,4 +1,4 @@
-const VERSION = "v853-table-status-performance-1";
+const VERSION = "v854-mobile-pos-1";
 const STATIC_CACHE = `tpg-static-${VERSION}`;
 const IMAGE_CACHE = `tpg-images-${VERSION}`;
 const CORE = [
