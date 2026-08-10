@@ -1,0 +1,9 @@
+TUM PA GUAY POS V8.3 STABLE PRODUCTION
+
+1. คัดลอกไฟล์ทั้งหมดไปแทนที่ Repository เดิม
+2. Commit: Upgrade to V8.3 Stable Production
+3. Push origin และรอ GitHub Pages deploy
+4. ปิด PWA/Chrome ทุกหน้าต่าง แล้วเปิดใหม่
+5. ไม่ต้องรัน SQL เพิ่ม หาก V8.2 ทำงานแล้ว
+
+V8.3 แก้: JWT expired, ต่ออายุ session อัตโนมัติ, reconnect เมื่อเน็ตกลับมา, ป้องกันกดบันทึก/ชำระเงินซ้ำ, cache ใหม่

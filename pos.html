@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="lo">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Tum Pa Guay POS V8.5.5</title>
+  <link rel="stylesheet" href="pos.css"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#062d20">
+</head>
+<body>
+<header class="pos-header">
+  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.5.5</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
+  <nav><a href="admin.html">Dashboard</a><a href="reports.html">Reports</a><a href="index.html">Website</a><span id="posUser"></span><button id="logoutBtn" hidden>Logout</button></nav>
+</header>
+<main>
+  <section id="loginPanel" class="login-card">
+    <h1>POS Login</h1><p>ເຂົ້າລະບົບດ້ວຍ Supabase Authentication</p>
+    <label>Email<input id="email" type="email" autocomplete="username"></label>
+    <label>Password<input id="password" type="password" autocomplete="current-password"></label>
+    <button id="loginBtn" class="primary">Login</button><p id="loginStatus"></p>
+  </section>
+
+  <section id="posApp" hidden>
+    <div class="topbar">
+      <div class="mode-tabs"><button class="active" data-view="sale">🧾 POS</button><button data-view="tables">🏕️ ຕູບ</button><button data-view="history">📚 ປະຫວັດບິນ</button><a class="report-tab" href="reports.html">📊 ລາຍງານ</a><button id="printerSettingsBtn" class="report-tab" type="button">🖨️ ຕັ້ງຄ່າປຣິນເຕີ</button></div>
+      <div class="current-order"><label>ຕູບ <select id="tableSelect"></select></label><button id="newOrderBtn">+ ບິນໃໝ່</button><span id="orderBadge">ບິນໃໝ່ (ຍັງບໍ່ບັນທຶກ)</span></div>
+    </div>
+
+    <section id="view-sale" class="view active">
+      <div class="sync-strip">🟢 Multi-device Safety • Realtime Sync • 🔒 1 ຕູບ = 1 ອຸປະກອນແກ້ໄຂໃນເວລາດຽວ</div><div class="help-strip">ແຕະຮູບອາຫານເພື່ອເພີ່ມລົງບິນ • ໃນມືຖືກົດປຸ່ມ “ບິນ” ດ້ານລຸ່ມເພື່ອເພີ່ມ/ຫຼຸດ/ລຶບລາຍການ ແລະ ຄິດເງິນ</div>
+      <button id="cartToggleBtn" class="cart-toggle" type="button" aria-expanded="false">🧾 <span class="cart-toggle-label">ບິນ</span> <span id="cartCountBadge">0</span><strong id="cartToggleTotal">0 ກີບ</strong></button>
+      <div id="saleLayout" class="sale-layout">
+        <section class="catalog-panel">
+          <div class="filters"><input id="menuSearch" placeholder="ຄົ້ນຫາເມນູ..."><select id="categoryFilter"><option value="all">ທຸກໝວດ</option></select></div>
+          <div id="menuGrid" class="menu-grid"></div>
+        </section>
+        <aside id="cartPanel" class="cart-panel">
+          <button id="cartCloseBtn" class="cart-close" type="button" aria-label="Close bill">×</button>
+          <div class="cart-title"><div><h2>ລາຍການສັ່ງ</h2><small id="cartOrderNo">ບິນໃໝ່</small></div><button id="clearCartBtn" class="danger ghost">ລ້າງ</button></div>
+          <div id="cartItems" class="cart-items"><p class="empty">ແຕະເມນູທາງຊ້າຍ</p></div>
+          <label class="order-note">ໝາຍເຫດບິນ<textarea id="orderNote" rows="2" placeholder="ເຊັ່ນ: ບໍ່ເຜັດ"></textarea></label>
+          <div class="totals">
+            <label>ສ່ວນຫຼຸດ <input id="discount" type="number" min="0" value="0"></label>
+            <label>VAT % <input id="vatRate" type="number" min="0" step="0.1" value="10" readonly></label>
+            <small id="vatModeLabel" class="vat-mode-label">VAT ລວມໃນລາຄາແລ້ວ</small>
+            <p><span>Subtotal</span><strong id="subtotal">0 ກີບ</strong></p><p><span>VAT</span><strong id="vatAmount">0 ກີບ</strong></p>
+            <p class="grand"><span>Grand Total</span><strong id="grandTotal">0 ກີບ</strong></p>
+          </div>
+          <div class="cart-actions"><button id="saveOrderBtn">ບັນທຶກອໍເດີ</button><button id="checkoutBtn" class="primary">ອອກບິນກວດສອບ</button><button id="finalizePaymentBtn" class="success" hidden>ຮັບເງິນ / ປິດບິນ</button></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="view-tables" class="view">
+      <div class="section-head"><div><h2>ຈັດການຕູບ</h2><p>ເລີ່ມຕົ້ນ 90 ຕູບ ແລະ ສາມາດເພີ່ມ/ຫຼຸດໄດ້</p></div><button id="refreshTables">Refresh</button></div>
+      <div class="table-manager">
+        <div class="table-stat total"><small>ຈຳນວນຕູບທັງໝົດ</small><strong id="activeTableCount">0</strong></div>
+        <div class="table-stat busy-stat"><small>ກຳລັງໃຊ້ງານ</small><strong id="busyTableCount">0</strong></div>
+        <div class="table-stat ready-stat"><small>ກຳລັງຄິດເງິນ</small><strong id="readyTableCount">0</strong></div>
+        <button id="removeTableBtn" class="danger-btn">− ຫຼຸດ 1 ຕູບ</button>
+        <button id="addTableBtn" class="primary">+ ເພີ່ມ 1 ຕູບ</button>
+        <label>ຕັ້ງຈຳນວນທັງໝົດ <input id="targetTableCount" type="number" min="1" max="500" value="90"><button id="setTableCountBtn">ບັນທຶກ</button></label>
+      </div>
+      <div class="legend"><span class="free-dot">ວ່າງ</span><span class="busy-dot">ກຳລັງໃຊ້</span><span class="ready-dot">ລໍຖ້າຄິດເງິນ</span></div>
+      <div id="tableGrid" class="table-grid"></div>
+    </section>
+    <section id="view-history" class="view"><div class="section-head"><h2>ປະຫວັດໃບບິນ</h2><button id="refreshHistory">Refresh</button></div><div id="historyList" class="history-list"></div></section>
+  </section>
+</main>
+
+<div id="checkoutModal" class="modal" hidden aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true"><button id="checkoutCloseBtn" class="modal-close" type="button">×</button><h2>ຮັບຊຳລະເງິນ</h2>
+    <p class="pay-total">ຍອດຊຳລະ <strong id="payTotal">0 ກີບ</strong></p>
+    <label>ວິທີຊຳລະ<select id="paymentMethod"><option value="cash">ເງິນສົດ</option><option value="bank_transfer">ໂອນທະນາຄານ</option><option value="qr">QR</option><option value="other">ອື່ນໆ</option></select></label>
+    <label>ເງິນຮັບ<input id="receivedAmount" type="number" min="0"></label><p>ເງິນທອນ: <strong id="changeAmount">0 ກີບ</strong></p>
+    <button id="confirmPaymentBtn" class="primary wide">ຢືນຢັນ ແລະ ອອກໃບບິນ</button>
+  </div>
+</div>
+
+
+<div id="printerModal" class="modal" hidden aria-hidden="true">
+  <div class="modal-card printer-card" role="dialog" aria-modal="true">
+    <button id="printerCloseBtn" class="modal-close" type="button">×</button>
+    <h2>ຕັ້ງຄ່າປຣິນເຕີ SL-253</h2>
+    <p class="printer-status" id="printerStatus">QZ Tray: ຍັງບໍ່ໄດ້ເຊື່ອມຕໍ່</p>
+    <div class="printer-actions"><button id="connectQzBtn" class="primary" type="button">1. ເຊື່ອມ QZ Tray</button><button id="findPrintersBtn" type="button">2. ຄົ້ນຫາປຣິນເຕີ</button></div>
+    <label>ຊື່ປຣິນເຕີ<select id="printerName"><option value="">-- ເລືອກປຣິນເຕີ --</option></select></label>
+    <label class="check-row"><input id="autoCut" type="checkbox" checked> ຕັດເຈ້ຍອັດຕະໂນມັດ</label>
+    <label class="check-row"><input id="openDrawer" type="checkbox"> ເປີດລິ້ນຊັກເງິນຫຼັງພິມ</label>
+    <label class="check-row"><input id="autoPrintAfterPay" type="checkbox"> ພິມອັດຕະໂນມັດຫຼັງຊຳລະ</label>
+    <button id="savePrinterBtn" class="primary wide" type="button">ບັນທຶກການຕັ້ງຄ່າ</button>
+    <small class="printer-help">ຕ້ອງຕິດຕັ້ງ QZ Tray ໃນ Mac/Windows ແລະເປີດໂປຣແກຣມໄວ້. ຖ້າບໍ່ໃຊ້ QZ Tray ໃຫ້ກົດ Browser Print.</small>
+  </div>
+</div>
+
+<section id="receipt" class="receipt" hidden>
+  <div class="receipt-actions no-print"><button id="directPrintBtn" class="primary">⚡ ພິມກົງ SL-253</button><button id="printBtn">🖨️ Browser Print</button><button id="closeReceiptBtn">Close</button></div>
+  <div class="receipt-paper"><img src="logo.png" alt="PaGuay" class="receipt-logo"><h1>ຮ້ານຕຳຕູບປ່າກ້ວຍ</h1><p>TUM PA GUAY RESTAURANT</p><h2 id="rReceiptTitle">RECEIPT / ໃບບິນຮັບເງິນ</h2><p id="rPendingNotice" class="pending-notice" hidden>ບິນກວດສອບ • ຍັງບໍ່ຊຳລະ • ສາມາດກັບໄປແກ້ໄຂລາຍການໄດ້</p>
+    <div class="receipt-meta"><span>Bill: <b id="rOrderNo"></b></span><span>Date: <b id="rDate"></b></span><span>ຕູບ: <b id="rTable"></b></span></div>
+    <table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody id="rItems"></tbody></table>
+    <div class="receipt-totals"><p><span>Subtotal</span><b id="rSubtotal"></b></p><p><span>Discount</span><b id="rDiscount"></b></p><p><span>VAT</span><b id="rVat"></b></p><p class="grand"><span>Grand Total</span><b id="rTotal"></b></p></div><p class="thanks">ຂອບໃຈທີ່ມາອຸດໜູນ • Thank you</p>
+  </div>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.5/qz-tray.js"></script><script src="config.js"></script><script src="stability.js"></script><script src="pos.js"></script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(console.error))}</script></body></html>

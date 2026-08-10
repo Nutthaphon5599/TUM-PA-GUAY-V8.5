@@ -1,0 +1,8 @@
+TUM PA GUAY V6.1
+
+1. อัปโหลดไฟล์ทั้งหมดทับ V6 ใน GitHub
+2. Commit changes
+3. รอ 1–3 นาที
+4. เปิด connection-test.html
+5. ถ้าขึ้นเชื่อมต่อสำเร็จ ให้เปิด index.html
+6. ถ้ายังไม่สำเร็จ รันไฟล์ SQL patch ที่แนบมา

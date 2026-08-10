@@ -1,0 +1,15 @@
+window.TPG_CONFIG = {
+  SUPABASE_URL: "https://jypsgmauzytklwiojfzg.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_Zm_AXv58v--bz0ziJELGIw__OziG00j",
+  STORAGE_BUCKET: "menu-images",
+  DEFAULT_LANGUAGE: "lo",
+  RESTAURANT: {
+    phoneDisplay: "020 2300 3002",
+    phoneIntl: "8562023003002",
+    whatsappIntl: "8562023003002",
+    facebookName: "LVmae Ladvongsa",
+    mapsUrl: "https://maps.app.goo.gl/b2Kh1HSFB7yJhCxb9?g_st=iw",
+    addressLao: "ບ້ານສະພັງເມິກ ຮ່ອມ 4, ເມືອງໄຊທານີ, ນະຄອນຫຼວງວຽງຈັນ",
+    openingHours: "09:00–18:30"
+  }
+};
