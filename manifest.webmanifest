@@ -1,7 +1,7 @@
 {
-  "name": "Tum Pa Guay POS V8.5.5.2",
-  "short_name": "TPG POS V8.5.5.2",
-  "start_url": "./pos.html?v=8.5.5.2",
+  "name": "Tum Pa Guay POS V8.5.5.3",
+  "short_name": "TPG POS V8.5.5.3",
+  "start_url": "./pos.html?v=8.5.5.3",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f3ed",
@@ -18,5 +18,5 @@
       "type": "image/png"
     }
   ],
-  "id": "tpg-pos-v8552"
+  "id": "tpg-pos-v8553"
 }
