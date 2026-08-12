@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Tum Pa Guay POS V8.5.5.1</title>
+  <title>Tum Pa Guay POS V8.5.5.2</title>
   <link rel="stylesheet" href="pos.css"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#062d20">
 </head>
 <body>
 <header class="pos-header">
-  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.5.5.1</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
+  <div class="brand"><img src="logo.png" alt="PaGuay"><div><strong>Tum Pa Guay POS V8.5.5.2</strong><small>ຮັບອໍເດີ • ຈັດການຕູບ • ພິມໃບບິນ</small></div></div>
   <nav><a href="admin.html">Dashboard</a><a href="reports.html">Reports</a><a href="index.html">Website</a><span id="posUser"></span><button id="logoutBtn" hidden>Logout</button></nav>
 </header>
 <main>
@@ -26,7 +26,7 @@
     </div>
 
     <section id="view-sale" class="view active">
-      <div class="sync-strip">🟢 Multi-device Safety • Realtime Sync • 🔒 1 ຕູບ = 1 ອຸປະກອນແກ້ໄຂໃນເວລາດຽວ</div><div class="help-strip">ແຕະຮູບອາຫານເພື່ອເພີ່ມລົງບິນ • ໃນມືຖືກົດປຸ່ມ “ບິນ” ດ້ານລຸ່ມເພື່ອເພີ່ມ/ຫຼຸດ/ລຶບລາຍການ ແລະ ຄິດເງິນ</div>
+      <div class="sync-strip">🟢 Multi-device Safety • Realtime Sync • 🔒 1 ຕູບ = 1 ອຸປະກອນແກ້ໄຂໃນເວລາດຽວ</div><div class="help-strip">ແຕະຮູບອາຫານເພື່ອເພີ່ມລົງບິນ • ໃນມືຖືກົດ “ບິນ” → ແກ້ໄຂລາຍການ → ຄິດເງິນ → ອອກໃບບິນໃຫ້ລູກຄ້າໄດ້ເຫມືອນຄອມພິວເຕີ</div>
       <button id="cartToggleBtn" class="cart-toggle" type="button" aria-expanded="false">🧾 <span class="cart-toggle-label">ບິນ</span> <span id="cartCountBadge">0</span><strong id="cartToggleTotal">0 ກີບ</strong></button>
       <div id="saleLayout" class="sale-layout">
         <section class="catalog-panel">
@@ -45,7 +45,12 @@
             <p><span>Subtotal</span><strong id="subtotal">0 ກີບ</strong></p><p><span>VAT</span><strong id="vatAmount">0 ກີບ</strong></p>
             <p class="grand"><span>Grand Total</span><strong id="grandTotal">0 ກີບ</strong></p>
           </div>
-          <div class="cart-actions"><button id="saveOrderBtn">ບັນທຶກອໍເດີ</button><button id="checkoutBtn" class="primary">ອອກບິນກວດສອບ</button><button id="finalizePaymentBtn" class="success" hidden>ຮັບເງິນ / ປິດບິນ</button></div>
+          <div class="cart-actions">
+            <button id="saveOrderBtn">ບັນທຶກອໍເດີ</button>
+            <button id="checkoutBtn" class="primary">ອອກບິນກວດສອບ</button>
+            <button id="mobilePayBtn" class="mobile-pay-btn" type="button">💰 ຄິດເງິນຈາກມືຖື</button>
+            <button id="finalizePaymentBtn" class="success" hidden>ຮັບເງິນ / ປິດບິນ</button>
+          </div>
         </aside>
       </div>
     </section>
@@ -93,9 +98,16 @@
 </div>
 
 <section id="receipt" class="receipt" hidden>
-  <div class="receipt-actions no-print"><button id="directPrintBtn" class="primary">⚡ ພິມກົງ SL-253</button><button id="printBtn">🖨️ Browser Print</button><button id="closeReceiptBtn">Close</button></div>
+  <div class="receipt-actions no-print"><button id="directPrintBtn" class="primary">⚡ ພິມກົງ SL-253</button><button id="printBtn">🖨️ ພິມ / Share Bill</button><button id="closeReceiptBtn">Close</button></div>
   <div class="receipt-paper"><img src="logo.png" alt="PaGuay" class="receipt-logo"><h1>ຮ້ານຕຳຕູບປ່າກ້ວຍ</h1><p>TUM PA GUAY RESTAURANT</p><h2 id="rReceiptTitle">RECEIPT / ໃບບິນຮັບເງິນ</h2><p id="rPendingNotice" class="pending-notice" hidden>ບິນກວດສອບ • ຍັງບໍ່ຊຳລະ • ສາມາດກັບໄປແກ້ໄຂລາຍການໄດ້</p>
-    <div class="receipt-meta"><span>Bill: <b id="rOrderNo"></b></span><span>Date: <b id="rDate"></b></span><span>ຕູບ: <b id="rTable"></b></span></div>
+    <div class="receipt-meta">
+      <span>Bill: <b id="rOrderNo"></b></span>
+      <span>Date: <b id="rDate"></b></span>
+      <span>ຕູບ: <b id="rTable"></b></span>
+      <span id="rPaymentRow" hidden>Payment: <b id="rPaymentMethod"></b></span>
+      <span id="rReceivedRow" hidden>Received: <b id="rReceived"></b></span>
+      <span id="rChangeRow" hidden>Change: <b id="rChange"></b></span>
+    </div>
     <table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody id="rItems"></tbody></table>
     <div class="receipt-totals"><p><span>Subtotal</span><b id="rSubtotal"></b></p><p><span>Discount</span><b id="rDiscount"></b></p><p><span>VAT</span><b id="rVat"></b></p><p class="grand"><span>Grand Total</span><b id="rTotal"></b></p></div><p class="thanks">ຂອບໃຈທີ່ມາອຸດໜູນ • Thank you</p>
   </div>
