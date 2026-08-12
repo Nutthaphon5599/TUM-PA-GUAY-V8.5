@@ -170,12 +170,14 @@ function totals(){
 function updatePaymentActions(){
   const pending=currentOrder?.status==='ready_to_pay';
   const f=$('#finalizePaymentBtn'); if(f)f.hidden=!pending;
-  const c=$('#checkoutBtn'); if(c)c.textContent=pending?'ອອກບິນກວດສອບໃໝ່':'ອອກບິນກວດສອບ';
+  const c=$('#checkoutBtn'); if(c)c.textContent=pending?'🧾 ບິນກວດສອບໃໝ່':'🧾 ບິນກວດສອບ';
   const m=$('#mobilePayBtn');
   if(m){
     m.hidden=!cart.length;
     m.textContent=pending?'💰 ຮັບເງິນ / ປິດບິນ':'💰 ຄິດເງິນຈາກມືຖື';
   }
+  const cb=$('#mobileCheckBillBtn');
+  if(cb)cb.hidden=!cart.length;
 }
 function renderCart(){$('#cartItems').innerHTML=cart.length?'':'<p class="empty">ແຕະເມນູເພື່ອເພີ່ມລົງບິນ</p>';cart.forEach((x,i)=>{const row=document.createElement('div');row.className='cart-row';row.innerHTML=`<div class="cart-item-main"><h4>${x.item_name}</h4><small>${money(x.unit_price)} × ${x.quantity} = ${money(x.unit_price*x.quantity)}</small><label class="item-note">ໝາຍເຫດ<input type="text" value="${String(x.note||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="ເຊັ່ນ: ບໍ່ເຜັດ"></label><button class="remove" type="button">ລຶບລາຍການ</button></div><div class="qty"><button aria-label="ຫຼຸດ" type="button">−</button><b>${x.quantity}</b><button aria-label="ເພີ່ມ" type="button">+</button></div>`;const bs=row.querySelectorAll('.qty button');bs[0].onclick=()=>changeQty(i,-1);bs[1].onclick=()=>changeQty(i,1);row.querySelector('.remove').onclick=()=>{cart.splice(i,1);renderCart()};row.querySelector('.item-note input').oninput=e=>{cart[i].note=e.target.value};$('#cartItems').appendChild(row)});const t=totals(),count=cart.reduce((n,x)=>n+x.quantity,0);$('#cartCountBadge').textContent=count;const mobileTotal=$('#cartToggleTotal');if(mobileTotal)mobileTotal.textContent=money(t.grand);$('#subtotal').textContent=money(t.subtotal);$('#vatAmount').textContent=money(t.vat);$('#grandTotal').textContent=money(t.grand);updatePaymentActions()}
 $('#discount').oninput=renderCart;$('#vatRate').oninput=renderCart;$('#clearCartBtn').onclick=()=>{if(!cart.length||confirm('ລ້າງລາຍການທັງໝົດ?')){cart=[];renderCart()}};
@@ -235,28 +237,6 @@ $('#checkoutModal').addEventListener('click',e=>{if(e.target===$('#checkoutModal
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCheckout()});
 $('#checkoutBtn').onclick=async()=>{const b=$('#checkoutBtn');if(b.disabled)return;lockButton(b,true,'ກຳລັງອອກບິນ...');try{if(!cart.length)throw new Error('ກະລຸນາເລືອກອາຫານກ່ອນ');const order=await createOrUpdateOrder('ready_to_pay');showReceipt(order,totals(),'pending')}catch(e){showError(e)}finally{lockButton(b,false)}};
 $('#finalizePaymentBtn').onclick=async()=>{try{if(!cart.length||!currentOrder?.id)throw new Error('ບໍ່ພົບບິນລໍຖ້າຊຳລະ');await createOrUpdateOrder('ready_to_pay');const t=totals();$('#payTotal').textContent=money(t.grand);$('#receivedAmount').value=Math.round(t.grand);calcChange();openCheckout()}catch(e){showError(e)}};
-$('#mobilePayBtn').onclick=async()=>{
-  const b=$('#mobilePayBtn');
-  if(b.disabled)return;
-  lockButton(b,true,'ກຳລັງເປີດໜ້າຄິດເງິນ...');
-  try{
-    if(!cart.length)throw new Error('ກະລຸນາເລືອກອາຫານກ່ອນ');
-    // Use exactly the same Pending Payment + table lock safety as desktop.
-    if(!currentOrder?.id || currentOrder.status!=='ready_to_pay'){
-      await createOrUpdateOrder('ready_to_pay');
-    }else{
-      await createOrUpdateOrder('ready_to_pay');
-    }
-    const t=totals();
-    $('#payTotal').textContent=money(t.grand);
-    $('#receivedAmount').value=Math.round(t.grand);
-    calcChange();
-    setCartOpen(false);
-    openCheckout();
-  }catch(e){showError(e)}
-  finally{lockButton(b,false)}
-};
-
 function calcChange(){const t=totals(),received=Number($('#receivedAmount').value||0);$('#changeAmount').textContent=money(Math.max(0,received-t.grand))}
 $('#receivedAmount').oninput=calcChange;$('#paymentMethod').onchange=()=>{if($('#paymentMethod').value!=='cash')$('#receivedAmount').value=Math.round(totals().grand);calcChange()};
 $('#confirmPaymentBtn').onclick=async()=>{const b=$('#confirmPaymentBtn');if(b.disabled)return;lockButton(b,true,'ກຳລັງຊຳລະ...');try{if(!currentOrder?.id)throw new Error('ບໍ່ພົບບິນ ກະລຸນາກົດຄິດເງິນໃໝ່');if(currentOrder.table_id && lockedTableId!==currentOrder.table_id)throw new Error('ບິນນີ້ບໍ່ໄດ້ຖືກລັອກໂດຍອຸປະກອນນີ້');const {data:payCheck}=await client.from('orders').select('status').eq('id',currentOrder.id).single();if(payCheck?.status==='paid')throw new Error('ບິນນີ້ຊຳລະແລ້ວ');const t=totals(),method=$('#paymentMethod').value,received=Number($('#receivedAmount').value||0);if(method==='cash'&&received<t.grand)throw new Error('ເງິນຮັບບໍ່ພໍ');const payment={order_id:currentOrder.id,method,amount:t.grand,received_amount:received,change_amount:Math.max(0,received-t.grand),paid_by:user.id};lastPaymentDetails={...payment};const {error:pErr}=await client.from('payments').insert(payment);if(pErr)throw pErr;const closed=new Date().toISOString();const {data,error}=await client.from('orders').update({status:'paid',closed_by:user.id,closed_at:closed}).eq('id',currentOrder.id).select().single();if(error)throw error;lastPaidOrder=data;closeCheckout();showReceipt(data,t,'paid');loadPrinterSettings();if(printerSettings.autoPrintAfterPay){directPrintReceipt().catch(e=>showError(e))}await Promise.all([loadOpenOrders(),loadHistory()]);resetOrder(false)}catch(e){showError(e)}finally{lockButton(b,false)}};
@@ -267,7 +247,7 @@ function paymentMethodLabel(method){
 function showReceipt(order,t,mode='paid'){
   if(window.innerWidth<=1180)setCartOpen(false);
   const pending=mode==='pending';
-  $('#rReceiptTitle').textContent=pending?'CHECK BILL / ໃບກວດສອບລາຍການ':'RECEIPT / ໃບບິນຮັບເງິນ';
+  $('#rReceiptTitle').textContent=pending?'CHECK BILL / ບິນກວດສອບກ່ອນຄິດເງິນ':'RECEIPT / ໃບບິນຮັບເງິນ';
   $('#rPendingNotice').hidden=!pending;
   $('#rOrderNo').textContent=order.order_number;
   $('#rDate').textContent=new Date(order.closed_at||Date.now()).toLocaleString();
@@ -289,23 +269,64 @@ function showReceipt(order,t,mode='paid'){
     $('#rChange').textContent=money(lastPaymentDetails.change_amount);
   }
 
-  // QZ direct print is desktop-only in this project. On phones/tablets,
-  // Browser Print opens the operating system print/share sheet.
+  const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||window.innerWidth<=760;
   const direct=$('#directPrintBtn');
-  if(direct){
-    const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth<=760;
-    direct.hidden=mobile;
-  }
+  if(direct)direct.hidden=mobile;
   const print=$('#printBtn');
   if(print){
-    const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth<=760;
-    print.textContent=mobile?'🖨️ ພິມ / Share Bill':'🖨️ Browser Print';
+    if(pending)print.textContent=mobile?'🖨️ ພິມ / Share ບິນກວດສອບ':'🖨️ Browser Print - Check Bill';
+    else print.textContent=mobile?'🖨️ ພິມ / Share Receipt':'🖨️ Browser Print - Receipt';
   }
-
   $('#receipt').dataset.mode=mode;
   $('#receipt').hidden=false;
   document.body.style.overflow='hidden';
 }
+
+// V8.5.6 FIX: MOBILE BUTTON ACTIONS
+const mobileCheckBillBtn = $('#mobileCheckBillBtn');
+if (mobileCheckBillBtn) {
+  mobileCheckBillBtn.onclick = async () => {
+    if (mobileCheckBillBtn.disabled) return;
+    lockButton(mobileCheckBillBtn, true, 'ກຳລັງສ້າງບິນ...');
+    try {
+      if (!cart.length) throw new Error('ກະລຸນາເລືອກອາຫານກ່ອນ');
+      const saved = await createOrUpdateOrder('ready_to_pay');
+      const t = totals();
+      lastPaymentDetails = null;
+      setCartOpen(false);
+      showReceipt(saved || currentOrder, t, 'pending');
+    } catch (e) {
+      showError(e);
+    } finally {
+      lockButton(mobileCheckBillBtn, false);
+      updatePaymentActions();
+    }
+  };
+}
+
+const mobilePayBtn = $('#mobilePayBtn');
+if (mobilePayBtn) {
+  mobilePayBtn.onclick = async () => {
+    if (mobilePayBtn.disabled) return;
+    lockButton(mobilePayBtn, true, 'ກຳລັງເປີດໜ້າຄິດເງິນ...');
+    try {
+      if (!cart.length) throw new Error('ກະລຸນາເລືອກອາຫານກ່ອນ');
+      await createOrUpdateOrder('ready_to_pay');
+      const t = totals();
+      $('#payTotal').textContent = money(t.grand);
+      $('#receivedAmount').value = Math.round(t.grand);
+      calcChange();
+      setCartOpen(false);
+      openCheckout();
+    } catch (e) {
+      showError(e);
+    } finally {
+      lockButton(mobilePayBtn, false);
+      updatePaymentActions();
+    }
+  };
+}
+
 $('#printBtn').onclick=()=>window.print();
 $('#directPrintBtn').onclick=async()=>{try{await directPrintReceipt()}catch(e){showError(e)}};
 $('#closeReceiptBtn').onclick=()=>{$('#receipt').hidden=true;document.body.style.overflow=''};

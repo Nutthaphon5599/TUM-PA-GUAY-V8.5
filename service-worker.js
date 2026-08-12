@@ -1,4 +1,4 @@
-const VERSION = "v8552-mobile-checkout-1";
+const VERSION = "v856-fix-mobile-button-actions-1";
 const STATIC_CACHE = `tpg-static-${VERSION}`;
 const IMAGE_CACHE = `tpg-images-${VERSION}`;
 const CORE = [

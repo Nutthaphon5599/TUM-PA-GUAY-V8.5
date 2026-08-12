@@ -65,19 +65,22 @@
 /* V8.5.5 multi-device safety */
 .sync-strip{margin:0 0 12px;padding:10px 14px;border:1px solid #b9dccd;background:#eef8f3;border-radius:12px;color:#0b5b3c;font-weight:700}.table-card.device-locked{box-shadow:inset 0 0 0 2px #6b7280;opacity:.78}.lock-label{display:block;margin-top:6px;color:#4b5563;font-weight:700}
 
-/* V8.5.5.2 Mobile Checkout */
-.mobile-pay-btn{display:none;background:#0b6b47!important;color:#fff!important;font-weight:800}
+/* V8.5.5.3 Mobile Checkout + Check Bill Print */
+.mobile-pay-btn,.mobile-checkbill-btn{display:none;font-weight:800}
+.mobile-pay-btn{background:#0b6b47!important;color:#fff!important}
+.mobile-checkbill-btn{background:#f0efe7!important;color:#17342a!important;border:1px solid #c9d3cc!important}
 @media(max-width:760px){
   .cart-actions{grid-template-columns:1fr}
   .cart-actions button{min-height:50px;font-size:16px}
-  .mobile-pay-btn{display:block!important;order:-1;background:#0b6b47!important;color:#fff!important}
+  .mobile-checkbill-btn{display:block!important;order:-2}
+  .mobile-pay-btn{display:block!important;order:-1}
   .modal{align-items:end;padding:0}
   .modal-card{width:100%;max-width:none;border-radius:18px 18px 0 0;padding:22px 18px max(22px,env(safe-area-inset-bottom))}
   .pay-total{font-size:18px}
   #confirmPaymentBtn{min-height:54px;font-size:17px;font-weight:800}
   #paymentMethod,#receivedAmount{min-height:50px;font-size:16px}
   .receipt{padding:8px 5px max(12px,env(safe-area-inset-bottom))}
-  .receipt-actions{position:sticky;top:0;bottom:auto;z-index:2;background:#222;padding:8px 0;margin-bottom:8px}
+  .receipt-actions{position:sticky;top:0;z-index:2;background:#222;padding:8px 0;margin-bottom:8px}
   .receipt-actions button{min-height:48px;font-size:15px}
   .receipt-paper{width:min(80mm,100%);min-height:auto;padding:6mm 4mm}
 }
